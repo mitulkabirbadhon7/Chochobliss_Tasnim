@@ -6,14 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test:auth": "tsx src/tests/auth.test.ts"
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test:auth": "tsx src/tests/auth.test.ts",
+    "test:phase3": "tsx src/tests/phase3.test.ts",
+    "test": "tsx src/tests/auth.test.ts && tsx src/tests/phase3.test.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "@supabase/supabase-js": "^2.117.2",
     "@types/pg": "^8.23.1",
+    "@upstash/redis": "^1.39.0",
     "clsx": "^2.1.1",
     "firebase": "^12.19.0",
     "firebase-admin": "^14.5.0",
