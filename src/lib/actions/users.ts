@@ -6,8 +6,10 @@ import { enforceRateLimit } from "@/lib/rate-limit";
 import {
   updateProfileSchema,
   addressSchema,
+  updateAddressSchema,
   type UpdateProfileInput,
   type AddressInput,
+  type UpdateAddressInput,
 } from "@/lib/validations/user";
 import {
   ValidationError,
@@ -185,3 +187,112 @@ export async function deleteAddressAction(addressId: string): Promise<ActionResu
     return handleActionError(error);
   }
 }
+
+/**
+ * Updates an existing address with strict ownership verification.
+ */
+export async function updateAddressAction(rawInput: unknown): Promise<ActionResult<{ success: boolean }>> {
+  try {
+    const user = await SessionService.getCurrentUser();
+    if (!user) {
+      throw new AuthenticationError("Sign in to update an address.");
+    }
+
+    await enforceRateLimit("user:update:address", user.id);
+
+    const validation = updateAddressSchema.safeParse(rawInput);
+    if (!validation.success) {
+      throw new ValidationError(
+        validation.error.issues[0]?.message || "Invalid address data.",
+        validation.error.issues
+      );
+    }
+
+    const input: UpdateAddressInput = validation.data;
+
+    const existing = await prisma.address.findUnique({
+      where: { id: input.id },
+    });
+
+    if (!existing) {
+      throw new NotFoundError("Address not found.");
+    }
+
+    if (existing.userId !== user.id) {
+      throw new AuthorizationError("You cannot modify another user's address.");
+    }
+
+    await prisma.$transaction(async (tx) => {
+      if (input.isDefault) {
+        await tx.address.updateMany({
+          where: { userId: user.id, isDefault: true },
+          data: { isDefault: false },
+        });
+      }
+
+      await tx.address.update({
+        where: { id: input.id },
+        data: {
+          ...(input.label && { label: input.label }),
+          ...(input.fullName && { fullName: input.fullName }),
+          ...(input.street && { street: input.street }),
+          ...(input.city && { city: input.city }),
+          ...(input.state && { state: input.state }),
+          ...(input.postalCode && { postalCode: input.postalCode }),
+          ...(input.country && { country: input.country }),
+          ...(input.phone && { phone: input.phone }),
+          ...(input.isDefault !== undefined && { isDefault: input.isDefault }),
+        },
+      });
+    });
+
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return handleActionError(error);
+  }
+}
+
+/**
+ * Sets an address as the default address with strict ownership verification.
+ */
+export async function setDefaultAddressAction(addressId: string): Promise<ActionResult<{ success: boolean }>> {
+  try {
+    const user = await SessionService.getCurrentUser();
+    if (!user) {
+      throw new AuthenticationError("Sign in to update default address.");
+    }
+
+    if (!addressId || typeof addressId !== "string") {
+      throw new ValidationError("Valid address ID is required.");
+    }
+
+    const existing = await prisma.address.findUnique({
+      where: { id: addressId },
+    });
+
+    if (!existing) {
+      throw new NotFoundError("Address not found.");
+    }
+
+    if (existing.userId !== user.id) {
+      throw new AuthorizationError("You cannot modify another user's address.");
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.address.updateMany({
+        where: { userId: user.id, isDefault: true },
+        data: { isDefault: false },
+      });
+
+      await tx.address.update({
+        where: { id: addressId },
+        data: { isDefault: true },
+      });
+    });
+
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return handleActionError(error);
+  }
+}
+

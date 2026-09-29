@@ -37,5 +37,19 @@ export const addressSchema = z.object({
   isDefault: z.boolean().default(false),
 });
 
+export const updateAddressSchema = z.object({
+  id: z.string().min(1, "Address ID is required."),
+  label: z.string().trim().min(1, "Address label is required.").optional(),
+  fullName: z.string().trim().min(2, "Full name must be at least 2 characters.").max(100).optional(),
+  street: z.string().trim().min(5, "Street address must be at least 5 characters.").max(200).optional(),
+  city: z.string().trim().min(2, "City is required.").max(100).optional(),
+  state: z.string().trim().min(2, "State is required.").max(100).optional(),
+  postalCode: z.string().trim().min(2, "Postal code is required.").max(20).optional(),
+  country: z.string().trim().min(2).optional(),
+  phone: z.string().trim().min(6, "Phone number is required.").max(20).optional(),
+  isDefault: z.boolean().optional(),
+});
+
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type AddressInput = z.infer<typeof addressSchema>;
+export type UpdateAddressInput = z.infer<typeof updateAddressSchema>;

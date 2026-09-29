@@ -10,17 +10,36 @@ export interface SessionUser {
   id: string;
   email: string;
   name: string | null;
+  phone?: string | null;
   role: Role;
   cocoaPoints: number;
 }
 
+let _mockUser: SessionUser | null | undefined = undefined;
+
 export class SessionService {
+  /**
+   * Internal test hook to mock session context in unit & integration tests.
+   */
+  static _setMockUser(user: SessionUser | null | undefined): void {
+    _mockUser = user;
+  }
+
   /**
    * Retrieves the current authenticated user from the verified session cookie.
    */
   static async getCurrentUser(): Promise<SessionUser | null> {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+    if (_mockUser !== undefined) {
+      return _mockUser;
+    }
+
+    let sessionCookie: string | undefined;
+    try {
+      const cookieStore = await cookies();
+      sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+    } catch {
+      return null;
+    }
 
     if (!sessionCookie) {
       return null;
@@ -42,6 +61,7 @@ export class SessionService {
           id: true,
           email: true,
           name: true,
+          phone: true,
           role: true,
           cocoaPoints: true,
         },
@@ -55,6 +75,7 @@ export class SessionService {
         id: dbUser.id,
         email: dbUser.email,
         name: dbUser.name,
+        phone: dbUser.phone,
         role: dbUser.role as Role,
         cocoaPoints: dbUser.cocoaPoints,
       };
