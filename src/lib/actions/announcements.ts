@@ -23,7 +23,7 @@ function safeRevalidateTag(tag: string): void {
 /**
  * Cached fetch of active public storefront announcements.
  */
-export const getCachedActiveAnnouncements = unstable_cache(
+const getCachedActiveAnnouncements = unstable_cache(
   async () => {
     const now = new Date();
     return prisma.announcement.findMany({

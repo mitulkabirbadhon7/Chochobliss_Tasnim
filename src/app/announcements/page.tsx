@@ -25,54 +25,54 @@ export default async function AnnouncementsPage() {
         return {
           icon: Tag,
           text: "Exclusive Promotion",
-          color: "bg-gold/15 text-gold border-gold/30",
+          color: "bg-[#D4A853]/15 text-[#8C6B1F] border-[#D4A853]/40",
         };
       case "ALERT":
         return {
           icon: AlertCircle,
           text: "Atelier Notice",
-          color: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+          color: "bg-amber-100 text-amber-900 border-amber-300",
         };
       default:
         return {
           icon: Megaphone,
           text: "Special Announcement",
-          color: "bg-blue-500/15 text-blue-300 border-blue-500/30",
+          color: "bg-[#C45A3C]/10 text-[#C45A3C] border-[#C45A3C]/30",
         };
     }
   };
 
   return (
-    <div className="bg-espresso-950 text-cream min-h-screen py-16 md:py-24">
+    <div className="bg-[#FAF7F2] text-[#1C140D] min-h-screen py-16 md:py-24">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gold/10 border border-gold/30 text-gold text-xs uppercase tracking-widest mb-4">
-            <Sparkles className="w-3.5 h-3.5" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#F5EDE4] border border-[#E8DCCF] text-[#634E3F] text-xs uppercase tracking-widest font-semibold mb-4">
+            <Sparkles className="w-3.5 h-3.5 text-[#D4A853]" />
             <span>Atelier Bulletins & Drops</span>
           </div>
-          <h1 className="font-serif text-4xl sm:text-5xl font-bold text-cream mb-4">
+          <h1 className="font-serif text-4xl sm:text-5xl font-bold text-[#1C140D] mb-4">
             Announcements & Releases
           </h1>
-          <p className="text-cream/70 text-base sm:text-lg">
-            Direct dispatches from Tasnim&apos;s chocolate kitchen—seasonal seasonal harvests, limited-edition
+          <p className="text-[#634E3F] text-base sm:text-lg leading-relaxed">
+            Direct dispatches from Tasnim&apos;s chocolate kitchen—seasonal harvests, limited-edition
             gift boxes, and tasting room schedule updates.
           </p>
         </div>
 
         {/* Announcements List */}
         {announcements.length === 0 ? (
-          <div className="text-center py-20 bg-espresso-900/40 rounded-3xl border border-gold/15 p-8">
-            <div className="w-16 h-16 rounded-full bg-gold/10 border border-gold/25 flex items-center justify-center mx-auto text-gold mb-4">
+          <div className="text-center py-20 bg-white rounded-3xl border border-[#E8DCCF] p-8 shadow-xs">
+            <div className="w-16 h-16 rounded-full bg-[#C45A3C]/10 border border-[#C45A3C]/20 flex items-center justify-center mx-auto text-[#C45A3C] mb-4">
               <Megaphone className="w-8 h-8" />
             </div>
-            <h3 className="font-serif text-2xl text-cream font-bold mb-2">No Active Announcements</h3>
-            <p className="text-cream/65 text-sm max-w-md mx-auto mb-6">
+            <h3 className="font-serif text-2xl text-[#1C140D] font-bold mb-2">No Active Announcements</h3>
+            <p className="text-[#634E3F] text-sm max-w-md mx-auto mb-6 leading-relaxed">
               Our chocolatiers are hard at work conching fresh harvests. Check back shortly for seasonal drops!
             </p>
             <Link
               href="/shop"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gold text-espresso-950 font-semibold hover:bg-gold-light transition text-sm"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#C45A3C] hover:bg-[#a8492e] text-[#FAF7F2] font-semibold transition-all text-sm shadow-md"
             >
               <span>Explore The Shop</span>
               <ArrowRight className="w-4 h-4" />
@@ -86,7 +86,7 @@ export default async function AnnouncementsPage() {
               return (
                 <article
                   key={item.id}
-                  className="p-8 rounded-2xl bg-espresso-900/60 border border-gold/20 hover:border-gold/40 transition shadow-xl relative overflow-hidden group"
+                  className="p-8 sm:p-10 rounded-2xl bg-white border border-[#E8DCCF] hover:border-[#C45A3C]/40 transition-all shadow-xs hover:shadow-md relative overflow-hidden group"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                     <span
@@ -96,8 +96,8 @@ export default async function AnnouncementsPage() {
                       <span>{badge.text}</span>
                     </span>
 
-                    <div className="flex items-center gap-2 text-xs text-cream/50">
-                      <Calendar className="w-3.5 h-3.5 text-gold/70" />
+                    <div className="flex items-center gap-2 text-xs text-[#634E3F] font-medium">
+                      <Calendar className="w-3.5 h-3.5 text-[#C45A3C]" />
                       <span>
                         {new Date(item.createdAt).toLocaleDateString("en-US", {
                           month: "long",
@@ -108,11 +108,11 @@ export default async function AnnouncementsPage() {
                     </div>
                   </div>
 
-                  <h2 className="font-serif text-2xl sm:text-3xl text-cream font-bold mb-3 group-hover:text-gold transition">
+                  <h2 className="font-serif text-2xl sm:text-3xl text-[#1C140D] font-bold mb-3 group-hover:text-[#C45A3C] transition-colors">
                     {item.title}
                   </h2>
 
-                  <p className="text-cream/75 leading-relaxed text-sm sm:text-base whitespace-pre-line mb-6">
+                  <p className="text-[#634E3F] leading-relaxed text-sm sm:text-base whitespace-pre-line mb-6">
                     {item.content}
                   </p>
 
@@ -120,7 +120,7 @@ export default async function AnnouncementsPage() {
                     <div className="pt-2">
                       <Link
                         href={item.linkUrl}
-                        className="inline-flex items-center gap-2 text-gold font-semibold text-sm hover:underline group-hover:translate-x-1 transition-transform"
+                        className="inline-flex items-center gap-2 text-[#C45A3C] font-semibold text-sm hover:underline group-hover:translate-x-1 transition-transform"
                       >
                         <span>Learn More / Claim Offer</span>
                         <ArrowRight className="w-4 h-4" />
@@ -134,18 +134,18 @@ export default async function AnnouncementsPage() {
         )}
 
         {/* Newsletter / Loyalty Callout */}
-        <div className="mt-16 p-8 rounded-3xl bg-gradient-to-r from-espresso-900 via-espresso-900/80 to-espresso-950 border border-gold/30 text-center">
-          <h3 className="font-serif text-2xl font-bold text-cream mb-2">
+        <div className="mt-16 p-8 sm:p-12 rounded-3xl bg-[#1C140D] text-[#FAF7F2] border border-[#634E3F]/40 text-center shadow-xl">
+          <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#F5EDE4] mb-3">
             Want Early Access to Limited Micro-Batches?
           </h3>
-          <p className="text-cream/70 text-sm max-w-xl mx-auto mb-6">
+          <p className="text-[#E8DCCF]/85 text-sm sm:text-base max-w-xl mx-auto mb-8 leading-relaxed">
             Join the ChocoBliss Connoisseur Club to earn Cocoa Points on every order and receive 24-hour priority access
             to single-origin seasonal reserves before public release.
           </p>
           <div className="flex justify-center gap-4">
             <Link
               href="/register"
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gold text-espresso-950 font-bold hover:bg-gold-light transition text-sm"
+              className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-[#C45A3C] hover:bg-[#a8492e] text-[#FAF7F2] font-bold transition-all text-sm shadow-md"
             >
               <span>Join Connoisseur Club</span>
             </Link>

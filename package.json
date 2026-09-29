@@ -14,7 +14,8 @@
     "test:phase5a": "tsx src/tests/phase5a.test.ts",
     "test:phase5b": "tsx src/tests/phase5b.test.ts",
     "test:phase5c": "tsx src/tests/phase5c.test.ts",
-    "test": "tsx src/tests/auth.test.ts && tsx src/tests/phase3.test.ts && tsx src/tests/phase4.test.ts && tsx src/tests/phase5a.test.ts && tsx src/tests/phase5b.test.ts && tsx src/tests/phase5c.test.ts"
+    "test:phase5d": "tsx src/tests/phase5d.test.ts",
+    "test": "tsx src/tests/auth.test.ts && tsx src/tests/phase3.test.ts && tsx src/tests/phase4.test.ts && tsx src/tests/phase5a.test.ts && tsx src/tests/phase5b.test.ts && tsx src/tests/phase5c.test.ts && tsx src/tests/phase5d.test.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

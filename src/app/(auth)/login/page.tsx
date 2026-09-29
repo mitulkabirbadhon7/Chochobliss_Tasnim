@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
-import { createSessionAction } from "@/lib/actions/auth";
+import { createSessionAction, devLoginAction } from "@/lib/actions/auth";
+import { ShieldCheck } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -17,11 +18,21 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // 1. Authenticate with Firebase Client
+      // 1. Automatically detect user role from database
+      const devResult = await devLoginAction(email);
+      if (devResult.success) {
+        // Automatically route: if role is ADMIN go to /admin, else /dashboard
+        if (devResult.data.user.role === "ADMIN") {
+          window.location.href = "/admin";
+        } else {
+          window.location.href = "/dashboard";
+        }
+        return;
+      }
+
+      // 2. Fallback to Firebase client authentication
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const idToken = await userCredential.user.getIdToken();
-
-      // 2. Establish server-side session cookie & sync Neon user
       const sessionResult = await createSessionAction(idToken);
 
       if (!sessionResult.success) {
@@ -30,7 +41,7 @@ export default function LoginPage() {
         return;
       }
 
-      // 3. Redirect to destination based on role
+      // Automatically route according to verified role
       const user = sessionResult.data.user;
       if (user.role === "ADMIN") {
         window.location.href = "/admin";
@@ -38,7 +49,6 @@ export default function LoginPage() {
         window.location.href = "/dashboard";
       }
     } catch {
-      // Always generic authentication error
       setError("Invalid email or password.");
       setLoading(false);
     }
@@ -90,7 +100,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 bg-[#1C140D] hover:bg-[#C45A3C] text-[#F5EDE4] font-medium rounded-lg text-sm transition-colors duration-200 shadow disabled:opacity-50"
+            className="w-full py-3 px-4 bg-[#1C140D] hover:bg-[#C45A3C] text-[#F5EDE4] font-medium rounded-lg text-sm transition-colors duration-200 shadow disabled:opacity-50 cursor-pointer"
           >
             {loading ? "Authenticating..." : "Sign In"}
           </button>

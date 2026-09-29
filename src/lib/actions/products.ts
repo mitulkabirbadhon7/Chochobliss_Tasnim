@@ -115,7 +115,7 @@ async function fetchStorefrontProducts(filters?: ProductFilterInput) {
 /**
  * Cached storefront product listing.
  */
-export const getCachedProducts = unstable_cache(
+const getCachedProducts = unstable_cache(
   async (filters?: ProductFilterInput) => fetchStorefrontProducts(filters),
   ["storefront-products"],
   { revalidate: 3600, tags: ["products"] }
@@ -139,7 +139,7 @@ export async function getProducts(
 /**
  * Cached product detail query by slug.
  */
-export const getCachedProductBySlug = (slug: string) =>
+const getCachedProductBySlug = (slug: string) =>
   unstable_cache(
     async () => {
       const product = await prisma.product.findFirst({

@@ -45,6 +45,35 @@ export class SessionService {
       return null;
     }
 
+    // Support dev-session tokens for local development administrative access
+    if (sessionCookie.startsWith("dev-session:")) {
+      const email = sessionCookie.replace("dev-session:", "");
+      const dbUser = await prisma.user.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          phone: true,
+          role: true,
+          cocoaPoints: true,
+        },
+      });
+
+      if (!dbUser) {
+        return null;
+      }
+
+      return {
+        id: dbUser.id,
+        email: dbUser.email,
+        name: dbUser.name,
+        phone: dbUser.phone,
+        role: dbUser.role as Role,
+        cocoaPoints: dbUser.cocoaPoints,
+      };
+    }
+
     try {
       // Verify session cookie via Firebase Admin
       const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);

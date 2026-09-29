@@ -7,6 +7,8 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [privacyPolicyAccepted, setPrivacyPolicyAccepted] = useState(false);
+  const [emailUpdatesAccepted, setEmailUpdatesAccepted] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -14,6 +16,12 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!privacyPolicyAccepted) {
+      setError("Please review and agree to the Privacy Policy to create your account.");
+      return;
+    }
+
     setLoading(true);
 
     const result = await registerAction({ name, email, password });
@@ -101,10 +109,51 @@ export default function RegisterPage() {
                 />
               </div>
 
+              {/* Consent & Preference Checkboxes */}
+              <div className="space-y-3 pt-1">
+                {/* 1. Privacy Policy Checkbox */}
+                <div className="flex items-start gap-2.5">
+                  <input
+                    type="checkbox"
+                    id="privacyPolicy"
+                    required
+                    checked={privacyPolicyAccepted}
+                    onChange={(e) => setPrivacyPolicyAccepted(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-[#E8DCCF] text-[#C45A3C] focus:ring-[#C45A3C] cursor-pointer"
+                  />
+                  <label htmlFor="privacyPolicy" className="text-xs text-[#634E3F] leading-tight cursor-pointer">
+                    I agree to the{" "}
+                    <a
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#C45A3C] font-semibold underline hover:text-[#1C140D]"
+                    >
+                      Privacy Policy
+                    </a>{" "}
+                    and data protection terms. <span className="text-[#C45A3C]">*</span>
+                  </label>
+                </div>
+
+                {/* 2. Email Updates Checkbox */}
+                <div className="flex items-start gap-2.5">
+                  <input
+                    type="checkbox"
+                    id="emailUpdates"
+                    checked={emailUpdatesAccepted}
+                    onChange={(e) => setEmailUpdatesAccepted(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-[#E8DCCF] text-[#C45A3C] focus:ring-[#C45A3C] cursor-pointer"
+                  />
+                  <label htmlFor="emailUpdates" className="text-xs text-[#634E3F] leading-tight cursor-pointer">
+                    Keep me updated with seasonal chocolate collections, private tasting invitations, and artisan news via email.
+                  </label>
+                </div>
+              </div>
+
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-2 py-3 px-4 bg-[#C45A3C] hover:bg-[#1C140D] text-white font-medium rounded-lg text-sm transition-colors duration-200 shadow disabled:opacity-50"
+                className="w-full mt-2 py-3 px-4 bg-[#C45A3C] hover:bg-[#1C140D] text-white font-medium rounded-lg text-sm transition-colors duration-200 shadow disabled:opacity-50 cursor-pointer"
               >
                 {loading ? "Creating Account..." : "Create Account"}
               </button>

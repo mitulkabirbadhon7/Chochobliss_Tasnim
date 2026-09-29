@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import { Sparkles, ArrowRight, ArrowDown } from "lucide-react";
+import { Sparkles, ArrowRight } from "lucide-react";
 
 interface HeroCanvasProps {
   totalFrames?: number;
@@ -36,7 +36,7 @@ export function HeroCanvas({
     [framePrefix, frameExtension]
   );
 
-  // Draw a specific frame to canvas with aspect-ratio-preserving cover logic
+  // Draw frame to canvas edge-to-edge without letterbox borders
   const drawFrame = useCallback((frameIndex: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -51,6 +51,8 @@ export function HeroCanvas({
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
 
+    if (width === 0 || height === 0) return;
+
     if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
       canvas.width = width * dpr;
       canvas.height = height * dpr;
@@ -59,7 +61,7 @@ export function HeroCanvas({
     ctx.save();
     ctx.scale(dpr, dpr);
 
-    // Cover fit calculation
+    // Edge-to-edge cover fit: fills full screen with no side borders
     const imgWidth = img.naturalWidth;
     const imgHeight = img.naturalHeight;
     const scale = Math.max(width / imgWidth, height / imgHeight);
@@ -71,17 +73,17 @@ export function HeroCanvas({
     ctx.clearRect(0, 0, width, height);
     ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
 
-    // Subtle luxury dark vignette overlay for typography legibility
+    // Subtle luxury dark vignette overlay for depth
     const gradient = ctx.createRadialGradient(
       width / 2,
       height / 2,
-      Math.min(width, height) * 0.3,
+      Math.min(width, height) * 0.35,
       width / 2,
       height / 2,
-      Math.max(width, height) * 0.8
+      Math.max(width, height) * 0.85
     );
-    gradient.addColorStop(0, "rgba(28, 20, 13, 0.2)");
-    gradient.addColorStop(1, "rgba(28, 20, 13, 0.7)");
+    gradient.addColorStop(0, "rgba(28, 20, 13, 0.1)");
+    gradient.addColorStop(1, "rgba(28, 20, 13, 0.65)");
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
 
@@ -163,7 +165,7 @@ export function HeroCanvas({
     };
   }, [isReducedMotion, totalFrames, getFramePath, drawFrame]);
 
-  // 3. Scroll position → animation frame via requestAnimationFrame
+  // 3. Scroll position -> animation frame via requestAnimationFrame
   useEffect(() => {
     if (isReducedMotion) return;
 
@@ -199,7 +201,6 @@ export function HeroCanvas({
 
         if (targetFrame !== currentFrameRef.current) {
           currentFrameRef.current = targetFrame;
-          // Find exact or closest available loaded frame (supports mobile downsampling)
           let frameToDraw = targetFrame;
           if (!imagesRef.current.has(frameToDraw)) {
             // Pick closest loaded neighbor
@@ -242,16 +243,11 @@ export function HeroCanvas({
     return () => window.removeEventListener("resize", handleResize);
   }, [drawFrame]);
 
-  // Calculate text panel opacities based on scroll progress
-  // Panel 1: 0% - 30%
-  const panel1Opacity = Math.max(0, Math.min(1, 1 - (scrollProgress - 0.1) * 5));
-  // Panel 2: 35% - 65%
-  const panel2Opacity =
-    scrollProgress >= 0.25 && scrollProgress <= 0.7
-      ? Math.sin(((scrollProgress - 0.25) / 0.45) * Math.PI)
-      : 0;
-  // Panel 3: 70% - 100%
-  const panel3Opacity = Math.max(0, Math.min(1, (scrollProgress - 0.65) * 4));
+  // Opacities:
+  // Title at the start fades out as user scrolls
+  const titleOpacity = Math.max(0, Math.min(1, 1 - scrollProgress * 3.5));
+  // Shop Now button at the end of animation fades in
+  const shopNowOpacity = Math.max(0, Math.min(1, (scrollProgress - 0.72) * 3.6));
 
   return (
     <div
@@ -259,19 +255,14 @@ export function HeroCanvas({
       className={`relative w-full ${isReducedMotion ? "h-screen" : "h-[260vh]"} bg-[#1C140D]`}
       aria-label="Artisanal chocolate crafting visual journey"
     >
-      {/* Sticky Canvas Container */}
+      {/* Sticky Canvas Container: full viewport edge-to-edge */}
       <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
         {/* Canvas Element */}
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full block object-cover"
           aria-hidden="true"
         />
-
-        {/* Fallback Static Visual for Reduced Motion */}
-        {isReducedMotion && (
-          <div className="absolute inset-0 bg-[#1C140D]/40 backdrop-blur-xs flex items-center justify-center pointer-events-none" />
-        )}
 
         {/* Loading Overlay */}
         {isLoading && (
@@ -294,90 +285,37 @@ export function HeroCanvas({
           </div>
         )}
 
-        {/* Text Story Panels Overlaid on the Canvas */}
-
-        {/* PANEL 1: Brand Introduction (Initial View) */}
+        {/* 1. START OVERLAY: Only "Chocobliss by Tasnim" in front of animation */}
         <div
-          className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 pointer-events-none transition-opacity duration-300"
-          style={{ opacity: isReducedMotion ? 1 : panel1Opacity }}
+          className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 pointer-events-none transition-opacity duration-300 z-10"
+          style={{ opacity: isReducedMotion ? 1 : titleOpacity }}
         >
-          <div className="max-w-3xl space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#1C140D]/80 border border-[#D4A853]/40 text-xs font-semibold text-[#D4A853] tracking-widest uppercase">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Artisanal Small-Batch Confectionery</span>
-            </div>
-
-            <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl font-bold text-[#F5EDE4] tracking-tight leading-[1.1] drop-shadow-md">
+          <div className="max-w-4xl">
+            <h1 className="font-serif text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-bold text-[#F5EDE4] tracking-tight leading-[1.05] drop-shadow-2xl select-none">
               Chocobliss
-              <span className="block text-xl sm:text-2xl font-sans tracking-[0.25em] text-[#D4A853] uppercase font-semibold mt-2">
-                By Tasnim
+              <span className="block text-base sm:text-xl md:text-2xl font-sans tracking-[0.28em] text-[#D4A853] uppercase font-medium mt-3 sm:mt-4">
+                by Tasnim
               </span>
             </h1>
-
-            <p className="text-base sm:text-xl text-[#F5EDE4]/90 max-w-xl mx-auto font-light leading-relaxed drop-shadow-xs">
-              Handcrafted, single-origin chocolate bars and velvet truffles crafted with rare terroir beans.
-            </p>
-
-            {!isReducedMotion && (
-              <div className="pt-8 flex flex-col items-center gap-2 text-xs uppercase tracking-widest text-[#D4A853] font-semibold animate-bounce">
-                <span>Scroll to Witness the Craft</span>
-                <ArrowDown className="w-4 h-4" />
-              </div>
-            )}
           </div>
         </div>
 
-        {/* PANEL 2: The Sourcing Story (Mid Scroll) */}
-        {!isReducedMotion && (
-          <div
-            className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 pointer-events-none transition-opacity duration-300"
-            style={{ opacity: panel2Opacity }}
-          >
-            <div className="max-w-2xl space-y-4 bg-[#1C140D]/60 backdrop-blur-md p-8 sm:p-10 rounded-3xl border border-[#E8DCCF]/20 shadow-2xl">
-              <span className="text-xs uppercase tracking-[0.2em] text-[#D4A853] font-bold block">
-                Ethical Terroir & Micro-Roasting
-              </span>
-              <h2 className="font-serif text-3xl sm:text-5xl font-bold text-[#F5EDE4] leading-tight">
-                Single-Origin Purity
-              </h2>
-              <p className="text-sm sm:text-base text-[#E8DCCF]/90 leading-relaxed font-light">
-                Directly sourced from Madagascar, Ecuador, and Colombia. Stone-ground for 72 hours to awaken natural floral nuances and raspberry brightness.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* PANEL 3: Call to Action (Final Scroll Position) */}
+        {/* 2. END OF ANIMATION OVERLAY: "Shop Now" button (positioned lower) */}
         <div
-          className={`absolute inset-0 flex flex-col items-center justify-center text-center px-6 ${
-            isReducedMotion ? "hidden" : ""
-          } transition-opacity duration-300 ${panel3Opacity > 0.4 ? "pointer-events-auto" : "pointer-events-none"}`}
-          style={{ opacity: isReducedMotion ? 0 : panel3Opacity }}
+          className={`absolute inset-0 flex flex-col items-center justify-center text-center px-6 transition-opacity duration-500 z-20 ${
+            scrollProgress > 0.7 ? "pointer-events-auto" : "pointer-events-none"
+          }`}
+          style={{
+            opacity: isReducedMotion ? 1 : shopNowOpacity,
+          }}
         >
-          <div className="max-w-2xl space-y-6 bg-[#1C140D]/75 backdrop-blur-md p-8 sm:p-12 rounded-3xl border border-[#D4A853]/30 shadow-2xl">
-            <span className="text-xs uppercase tracking-[0.25em] text-[#D4A853] font-bold block">
-              Tempered to Perfection
-            </span>
-            <h2 className="font-serif text-3xl sm:text-5xl font-bold text-[#F5EDE4] leading-tight">
-              Ready to Experience Chocobliss?
-            </h2>
-            <p className="text-sm sm:text-base text-[#E8DCCF]/90 max-w-lg mx-auto leading-relaxed">
-              Explore our fresh seasonal batches, silky ganache collections, and gift sets curated by Tasnim.
-            </p>
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/shop"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-[#C45A3C] hover:bg-[#a8492e] text-[#FAF7F2] rounded-full text-sm font-semibold transition-all shadow-lg hover:shadow-xl"
-              >
-                Shop The Boutique <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href="/story"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 border border-[#D4A853]/60 bg-[#1C140D]/80 hover:bg-[#1C140D] text-[#F5EDE4] rounded-full text-sm font-semibold transition-all"
-              >
-                Our Story
-              </Link>
-            </div>
+          <div className="transform translate-y-28 sm:translate-y-36">
+            <Link
+              href="/shop"
+              className="inline-flex items-center justify-center gap-3 px-10 py-4 bg-[#C45A3C] hover:bg-[#a8492e] text-[#FAF7F2] rounded-full text-base sm:text-lg font-semibold tracking-wide transition-all shadow-2xl hover:shadow-[#C45A3C]/40 hover:scale-105 active:scale-95 duration-200"
+            >
+              Shop Now <ArrowRight className="w-5 h-5" />
+            </Link>
           </div>
         </div>
       </div>

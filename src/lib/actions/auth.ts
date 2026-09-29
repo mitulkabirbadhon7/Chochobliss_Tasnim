@@ -6,6 +6,8 @@ import { rateLimit } from "@/lib/rate-limit";
 import { SessionService, SESSION_DURATION_MS, type SessionUser } from "@/lib/auth/session";
 import { loginSchema, registerSchema, passwordResetSchema } from "@/lib/validations/auth";
 
+import { FIXED_ADMIN_EMAILS } from "@/lib/constants/admins";
+
 export type ActionResult<T> =
   | { success: true; data: T }
   | { success: false; error: { code: string; message: string } };
@@ -44,20 +46,28 @@ export async function createSessionAction(idToken: string): Promise<ActionResult
     await SessionService.setSessionCookie(sessionCookie);
 
     // 5. Ensure synchronized record exists in Neon PostgreSQL
+    const normalizedEmail = email.toLowerCase().trim();
+    const isAdminEmail = FIXED_ADMIN_EMAILS.includes(normalizedEmail);
+
     let dbUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!dbUser) {
       dbUser = await prisma.user.create({
         data: {
-          email,
-          name: decodedToken.name || email.split("@")[0],
+          email: normalizedEmail,
+          name: decodedToken.name || normalizedEmail.split("@")[0],
           authProvider: "firebase",
           authProviderId: decodedToken.uid,
-          role: "CUSTOMER", // Default role
-          cocoaPoints: 0,
+          role: isAdminEmail ? "ADMIN" : "CUSTOMER",
+          cocoaPoints: isAdminEmail ? 1000 : 0,
         },
+      });
+    } else if (isAdminEmail && dbUser.role !== "ADMIN") {
+      dbUser = await prisma.user.update({
+        where: { id: dbUser.id },
+        data: { role: "ADMIN" },
       });
     }
 
@@ -203,5 +213,56 @@ export async function getCurrentUserAction(): Promise<ActionResult<SessionUser |
   return {
     success: true,
     data: user,
+  };
+}
+
+/**
+ * Development-mode administrative login helper to establish session for Tasnim admin.
+ */
+export async function devLoginAction(email: string = "mitulkabirbadhon7@gmail.com"): Promise<ActionResult<{ user: SessionUser }>> {
+  const normalizedEmail = email.toLowerCase().trim();
+  const isAdminEmail = FIXED_ADMIN_EMAILS.includes(normalizedEmail);
+
+  let dbUser = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+  });
+
+  if (!dbUser && isAdminEmail) {
+    dbUser = await prisma.user.create({
+      data: {
+        email: normalizedEmail,
+        name: normalizedEmail.startsWith("mitul") ? "Mitul Kabir Badhon" : "Tasnim",
+        role: "ADMIN",
+        cocoaPoints: 1000,
+        authProvider: "credentials",
+      },
+    });
+  } else if (!dbUser) {
+    return {
+      success: false,
+      error: { code: "NOT_FOUND", message: "User account not found." },
+    };
+  }
+
+  if (isAdminEmail && dbUser.role !== "ADMIN") {
+    dbUser = await prisma.user.update({
+      where: { id: dbUser.id },
+      data: { role: "ADMIN" },
+    });
+  }
+
+  await SessionService.setSessionCookie(`dev-session:${dbUser.email}`);
+
+  return {
+    success: true,
+    data: {
+      user: {
+        id: dbUser.id,
+        email: dbUser.email,
+        name: dbUser.name,
+        role: dbUser.role as SessionUser["role"],
+        cocoaPoints: dbUser.cocoaPoints,
+      },
+    },
   };
 }

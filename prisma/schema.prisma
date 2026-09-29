@@ -220,3 +220,20 @@ model SiteContent {
   @@index([key])
   @@map("site_contents")
 }
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  category  String   @default("GENERAL") // COMPLAINT, INQUIRY, FEEDBACK, CUSTOM_ORDER, GENERAL
+  subject   String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([category])
+  @@index([createdAt])
+  @@map("contact_messages")
+}
+

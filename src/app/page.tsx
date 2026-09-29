@@ -73,29 +73,6 @@ export default async function HomePage() {
       {/* 1. Hero Canvas Scroll Sequence */}
       <HeroCanvas totalFrames={120} framePrefix="/frames/ezgif-frame-" frameExtension=".jpg" />
 
-      {/* 2. Active CMS Announcement Highlight */}
-      {activeAnnouncement && (
-        <aside aria-label="Store announcement" className="bg-[#1C140D] text-[#F5EDE4] py-3.5 px-4 border-y border-[#D4A853]/40">
-          <div className="container-custom flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-            <div className="flex items-center gap-2.5">
-              <span className="px-2 py-0.5 rounded-full bg-[#D4A853] text-[#1C140D] text-[10px] font-bold uppercase tracking-wider">
-                {activeAnnouncement.bannerType}
-              </span>
-              <p className="text-xs sm:text-sm font-medium">
-                <strong>{activeAnnouncement.title}:</strong> {activeAnnouncement.content}
-              </p>
-            </div>
-            {activeAnnouncement.linkUrl && (
-              <Link
-                href={activeAnnouncement.linkUrl}
-                className="inline-flex items-center gap-1 text-xs text-[#D4A853] hover:text-[#FAF7F2] font-semibold transition-colors shrink-0"
-              >
-                Learn More <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            )}
-          </div>
-        </aside>
-      )}
 
       {/* 3. Curated Collections Grid */}
       <section className="py-20 px-6 bg-[#FAF7F2]">

@@ -67,9 +67,13 @@ export function Navbar() {
   const navLinks = [
     { label: "Home", href: "/" },
     { label: "Shop", href: "/shop" },
-    { label: "Our Story", href: "/story" },
     { label: "Announcements", href: "/announcements" },
+    { label: "Contact Us", href: "/contact" },
   ];
+
+  if (pathname.startsWith("/admin")) {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-40 w-full">
