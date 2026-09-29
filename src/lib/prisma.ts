@@ -7,13 +7,22 @@ const globalForPrisma = globalThis as unknown as {
   pool: Pool | undefined;
 };
 
+if (!process.env.DATABASE_URL) {
+  try {
+    process.loadEnvFile(".env.local");
+  } catch {}
+}
+
 const connectionString = process.env.DATABASE_URL || "";
+
+const isNeon = connectionString.includes("neon.tech") || connectionString.includes("sslmode=");
+const isProduction = process.env.NODE_ENV === "production";
 
 const pool =
   globalForPrisma.pool ??
   new Pool({
     connectionString,
-    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
+    ssl: isNeon || isProduction ? { rejectUnauthorized: false } : undefined,
     max: 10,
   });
 
