@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+@theme {
+  --color-deep-cacao: #1C140D;
+  --color-cream: #F5EDE4;
+  --color-warm-white: #FAF7F2;
+  --color-terracotta: #C45A3C;
+  --color-warm-gold: #D4A853;
+  --color-muted-cacao: #634E3F;
+  --color-border-cream: #E8DCCF;
+
+  --font-serif: var(--font-cormorant), "Playfair Display", Georgia, serif;
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
 :root {
   --color-deep-cacao: #1C140D;
   --color-cream: #F5EDE4;
@@ -10,10 +23,65 @@
   --color-border-cream: #E8DCCF;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background-color: var(--color-warm-white);
   color: var(--color-deep-cacao);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-sans);
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Luxury brand focus styles */
+:focus-visible {
+  outline: 2px solid var(--color-warm-gold);
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar for artisanal feel */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-warm-white);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-cream);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted-cacao);
+}
+
+/* Reusable Layout & Component Utilities */
+.container-custom {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .container-custom {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-custom {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
 }
