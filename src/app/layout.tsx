@@ -64,8 +64,13 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Authoritative server-side session check
-  const currentUser = await SessionService.getCurrentUser();
+  // Authoritative server-side session check with graceful fallback
+  let currentUser = null;
+  try {
+    currentUser = await SessionService.getCurrentUser();
+  } catch (err) {
+    console.warn("RootLayout SessionService fallback:", err);
+  }
 
   return (
     <html lang="en" className={`${cormorant.variable} ${inter.variable}`}>

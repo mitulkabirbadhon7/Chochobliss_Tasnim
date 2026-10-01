@@ -26,5 +26,32 @@ function getFirebaseAdminApp(): App {
   });
 }
 
-export const adminApp: App = getFirebaseAdminApp();
-export const adminAuth: Auth = getAuth(adminApp);
+let _adminApp: App | null = null;
+let _adminAuth: Auth | null = null;
+
+export function getAdminAuth(): Auth | null {
+  try {
+    if (!_adminAuth) {
+      _adminApp = getFirebaseAdminApp();
+      _adminAuth = getAuth(_adminApp);
+    }
+    return _adminAuth;
+  } catch (err) {
+    console.warn("Firebase Admin Auth unavailable:", err);
+    return null;
+  }
+}
+
+// Transparent Proxy so existing imports `adminAuth.verifySessionCookie(...)` work safely without throwing on import
+export const adminAuth: Auth = new Proxy({} as Auth, {
+  get(_target, prop) {
+    const auth = getAdminAuth();
+    if (!auth) {
+      return () => {
+        throw new Error("Firebase Admin is not configured with credentials in this environment.");
+      };
+    }
+    const val = (auth as any)[prop];
+    return typeof val === "function" ? val.bind(auth) : val;
+  },
+});

@@ -17,45 +17,62 @@ import {
 export const revalidate = 1800; // 30 minutes cache revalidation
 
 export default async function HomePage() {
-  // Query authoritative active products and announcements from Neon DB
-  const [featuredProducts, activeAnnouncements, categoriesContent, showcaseContent, allRecentProducts, totalProductsCount] = await Promise.all([
-    prisma.product.findMany({
-      where: {
-        isFeatured: true,
-        isPublished: true,
-        deletedAt: null,
-      },
-      take: 4,
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.announcement.findMany({
-      where: {
-        isActive: true,
-        AND: [
-          { OR: [{ startDate: null }, { startDate: { lte: new Date() } }] },
-          { OR: [{ endDate: null }, { endDate: { gte: new Date() } }] },
-        ],
-      },
-      take: 1,
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.siteContent.findUnique({ where: { key: "homepage_categories" } }),
-    prisma.siteContent.findUnique({ where: { key: "homepage_showcase" } }),
-    prisma.product.findMany({
-      where: {
-        isPublished: true,
-        deletedAt: null,
-      },
-      take: 8,
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.product.count({
-      where: {
-        isPublished: true,
-        deletedAt: null,
-      },
-    }),
-  ]);
+  let featuredProducts: any[] = [];
+  let activeAnnouncements: any[] = [];
+  let categoriesContent: any = null;
+  let showcaseContent: any = null;
+  let allRecentProducts: any[] = [];
+  let totalProductsCount = 0;
+
+  try {
+    const results = await Promise.all([
+      prisma.product.findMany({
+        where: {
+          isFeatured: true,
+          isPublished: true,
+          deletedAt: null,
+        },
+        take: 4,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.announcement.findMany({
+        where: {
+          isActive: true,
+          AND: [
+            { OR: [{ startDate: null }, { startDate: { lte: new Date() } }] },
+            { OR: [{ endDate: null }, { endDate: { gte: new Date() } }] },
+          ],
+        },
+        take: 1,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.siteContent.findUnique({ where: { key: "homepage_categories" } }),
+      prisma.siteContent.findUnique({ where: { key: "homepage_showcase" } }),
+      prisma.product.findMany({
+        where: {
+          isPublished: true,
+          deletedAt: null,
+        },
+        take: 8,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.product.count({
+        where: {
+          isPublished: true,
+          deletedAt: null,
+        },
+      }),
+    ]);
+
+    featuredProducts = results[0];
+    activeAnnouncements = results[1];
+    categoriesContent = results[2];
+    showcaseContent = results[3];
+    allRecentProducts = results[4];
+    totalProductsCount = results[5];
+  } catch (err) {
+    console.warn("HomePage database fallback:", err);
+  }
 
   const activeAnnouncement = activeAnnouncements[0];
 
