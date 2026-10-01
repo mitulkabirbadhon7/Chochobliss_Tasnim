@@ -13,7 +13,8 @@ if (!process.env.DATABASE_URL) {
   } catch {}
 }
 
-const connectionString = process.env.DATABASE_URL || "";
+// Use sslmode=verify-full to avoid node-postgres pg deprecation warning in dev and production
+const connectionString = (process.env.DATABASE_URL || "").replace("sslmode=require", "sslmode=verify-full");
 
 const isNeon = connectionString.includes("neon.tech") || connectionString.includes("sslmode=");
 const isProduction = process.env.NODE_ENV === "production";

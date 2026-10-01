@@ -243,16 +243,16 @@ export function HeroCanvas({
     return () => window.removeEventListener("resize", handleResize);
   }, [drawFrame]);
 
-  // Opacities:
-  // Title at the start fades out as user scrolls
-  const titleOpacity = Math.max(0, Math.min(1, 1 - scrollProgress * 3.5));
-  // Shop Now button at the end of animation fades in
-  const shopNowOpacity = Math.max(0, Math.min(1, (scrollProgress - 0.72) * 3.6));
+  // Dynamic Opacities:
+  // Title at the start fades smoothly as user scrolls
+  const titleOpacity = Math.max(0, Math.min(1, 1 - scrollProgress * 2.4));
+  // Shop Now button appears earlier on mobile so the user always has a responsive interactive CTA
+  const shopNowOpacity = Math.max(0, Math.min(1, (scrollProgress - 0.45) * 3.2));
 
   return (
     <div
       ref={containerRef}
-      className={`relative w-full ${isReducedMotion ? "h-screen" : "h-[260vh]"} bg-[#1C140D]`}
+      className={`relative w-full ${isReducedMotion ? "h-screen" : "h-[160vh] sm:h-[240vh]"} bg-[#1C140D] touch-pan-y`}
       aria-label="Artisanal chocolate crafting visual journey"
     >
       {/* Sticky Canvas Container: full viewport edge-to-edge */}
@@ -285,36 +285,49 @@ export function HeroCanvas({
           </div>
         )}
 
-        {/* 1. START OVERLAY: Only "Chocobliss by Tasnim" in front of animation */}
+        {/* 1. START OVERLAY: "Chocobliss by Tasnim" in front of animation */}
         <div
-          className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 pointer-events-none transition-opacity duration-300 z-10"
+          className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 sm:px-6 pointer-events-none transition-opacity duration-300 z-10"
           style={{ opacity: isReducedMotion ? 1 : titleOpacity }}
         >
           <div className="max-w-4xl">
-            <h1 className="font-serif text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-bold text-[#F5EDE4] tracking-tight leading-[1.05] drop-shadow-2xl select-none">
+            <h1 className="font-serif text-4xl sm:text-7xl md:text-8xl lg:text-9xl font-bold text-[#F5EDE4] tracking-tight leading-[1.05] drop-shadow-2xl select-none">
               Chocobliss
-              <span className="block text-base sm:text-xl md:text-2xl font-sans tracking-[0.28em] text-[#D4A853] uppercase font-medium mt-3 sm:mt-4">
+              <span className="block text-sm sm:text-xl md:text-2xl font-sans tracking-[0.24em] sm:tracking-[0.28em] text-[#D4A853] uppercase font-medium mt-2 sm:mt-4">
                 by Tasnim
               </span>
             </h1>
           </div>
+
+          {/* Dynamic Mobile Scroll Hint: shows when at the top */}
+          <div
+            className="absolute bottom-12 inset-x-0 flex flex-col items-center justify-center text-center pointer-events-none transition-opacity duration-300"
+            style={{ opacity: Math.max(0, 1 - scrollProgress * 4) }}
+          >
+            <span className="text-[10px] tracking-[0.25em] uppercase text-[#D4A853] font-bold block mb-1.5 drop-shadow">
+              Swipe to craft
+            </span>
+            <div className="w-5 h-8 rounded-full border border-[#FAF7F2]/40 flex items-start justify-center p-1 bg-[#1C140D]/30 backdrop-blur-xs">
+              <div className="w-1 h-2.5 bg-[#D4A853] rounded-full animate-bounce" />
+            </div>
+          </div>
         </div>
 
-        {/* 2. END OF ANIMATION OVERLAY: "Shop Now" button (positioned lower) */}
+        {/* 2. END OF ANIMATION OVERLAY: "Shop Now" button */}
         <div
           className={`absolute inset-0 flex flex-col items-center justify-center text-center px-6 transition-opacity duration-500 z-20 ${
-            scrollProgress > 0.7 ? "pointer-events-auto" : "pointer-events-none"
+            scrollProgress > 0.45 ? "pointer-events-auto" : "pointer-events-none"
           }`}
           style={{
             opacity: isReducedMotion ? 1 : shopNowOpacity,
           }}
         >
-          <div className="transform translate-y-28 sm:translate-y-36">
+          <div className="transform translate-y-12 sm:translate-y-36">
             <Link
               href="/shop"
-              className="inline-flex items-center justify-center gap-3 px-10 py-4 bg-[#C45A3C] hover:bg-[#a8492e] text-[#FAF7F2] rounded-full text-base sm:text-lg font-semibold tracking-wide transition-all shadow-2xl hover:shadow-[#C45A3C]/40 hover:scale-105 active:scale-95 duration-200"
+              className="inline-flex items-center justify-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 bg-[#C45A3C] hover:bg-[#a8492e] text-[#FAF7F2] rounded-full text-sm sm:text-lg font-semibold tracking-wide transition-all shadow-2xl hover:shadow-[#C45A3C]/40 hover:scale-105 active:scale-95 duration-200"
             >
-              Shop Now <ArrowRight className="w-5 h-5" />
+              Shop Boutique <ArrowRight className="w-4 h-4 sm:w-5 h-5" />
             </Link>
           </div>
         </div>
