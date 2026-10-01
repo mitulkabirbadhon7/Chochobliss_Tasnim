@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectCartTotalQuantity, toggleCart } from "@/store/slices/cartSlice";
@@ -87,13 +88,25 @@ export function Navbar() {
       <nav className="bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E8DCCF] transition-all duration-200">
         <div className="container-custom flex items-center justify-between h-20">
           {/* Brand Logo */}
-          <Link href="/" className="flex flex-col group py-1">
-            <span className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-[#1C140D] group-hover:text-[#C45A3C] transition-colors leading-none">
-              Chocobliss
-            </span>
-            <span className="text-[10px] uppercase tracking-[0.25em] text-[#634E3F] font-semibold mt-1">
-              By Tasnim
-            </span>
+          <Link href="/" className="inline-flex items-center gap-3 group py-1">
+            <div className="relative w-11 h-11 sm:w-13 sm:h-13 shrink-0 group-hover:scale-105 transition-transform duration-300">
+              <Image
+                src="/images/logo.png"
+                alt="Chocobliss by Tasnim"
+                fill
+                priority
+                sizes="(max-width: 640px) 44px, 52px"
+                className="object-contain drop-shadow-sm"
+              />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-[#1C140D] group-hover:text-[#C45A3C] transition-colors leading-none">
+                Chocobliss
+              </span>
+              <span className="text-[10px] uppercase tracking-[0.25em] text-[#D4A853] font-bold mt-1">
+                By Tasnim
+              </span>
+            </div>
           </Link>
 
           {/* Desktop Nav Links */}

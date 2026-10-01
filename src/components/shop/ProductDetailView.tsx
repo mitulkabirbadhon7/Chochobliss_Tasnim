@@ -1,10 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAppDispatch } from "@/store/hooks";
 import { addItem, setCartOpen } from "@/store/slices/cartSlice";
+import {
+  createReview,
+  checkIsVerifiedBuyerAction,
+  getProductReviewsAction,
+} from "@/lib/actions/review";
 import {
   ShoppingBag,
   Sparkles,
@@ -16,6 +21,10 @@ import {
   ArrowRight,
   Heart,
   Share2,
+  Star,
+  MessageSquareQuote,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 
 export interface ProductDetailProps {
@@ -34,6 +43,8 @@ export interface ProductDetailProps {
     allergens: string[];
     weight?: string | null;
     images: string[];
+    hoverImage?: string | null;
+    flavors?: string[];
     category: string;
   };
   relatedProducts: Array<{
@@ -56,6 +67,70 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailPro
   const [isAdded, setIsAdded] = useState(false);
   const [activeTab, setActiveTab] = useState<"notes" | "ingredients" | "shipping">("notes");
 
+  // Effective Flavors: Use database flavors, or parse from description (e.g. 1.Dark 2.White Milk 3.Chochonut), or category default
+  const effectiveFlavors = React.useMemo(() => {
+    const cleanFlavorList = (list: string[]) =>
+      list
+        .map((f) => f.replace(/^[0-9]+[\.\)\s-]+/, "").trim())
+        .filter(Boolean);
+
+    if (product.flavors && product.flavors.length > 0) {
+      const cleaned = cleanFlavorList(product.flavors);
+      if (cleaned.length > 0) return cleaned;
+    }
+    if (product.description) {
+      const match = product.description.match(/(?:[1-9][\.\)]|\b(?:flavor|flavour)s?[:\s]*)([^,\n\r]+)/gi);
+      if (match && match.length > 1) {
+        const parsed = cleanFlavorList(
+          match.map((m) => m.replace(/^[1-9][\.\)]\s*|(?:flavor|flavour)s?[:\s]*/i, "").trim())
+        );
+        if (parsed.length > 0) return parsed;
+      }
+    }
+    if (product.category === "Bar" || product.name.toLowerCase().includes("bar")) {
+      return ["Dark", "White Milk", "Chochonut"];
+    }
+    if (product.category === "mini" || product.name.toLowerCase().includes("mini")) {
+      return ["Dark", "White", "Chochonut"];
+    }
+    if (product.category === "Customized Bar") {
+      return ["Dark 72%", "White Milk", "Roasted Pistachio Slab", "Custom Blend"];
+    }
+    return [];
+  }, [product.flavors, product.description, product.category, product.name]);
+
+  // Task 4: Mandatory Flavor Selection
+  const [selectedFlavor, setSelectedFlavor] = useState<string | null>(
+    effectiveFlavors.length > 0 ? effectiveFlavors[0] : null
+  );
+
+  // Sync selectedFlavor when effectiveFlavors changes
+  useEffect(() => {
+    if (!selectedFlavor && effectiveFlavors.length > 0) {
+      setSelectedFlavor(effectiveFlavors[0]);
+    }
+  }, [effectiveFlavors, selectedFlavor]);
+
+  // Task 5: Verified Customer Reviews State
+  const [reviews, setReviews] = useState<
+    Array<{
+      id: string;
+      rating: number;
+      title: string | null;
+      comment: string;
+      createdAt: Date;
+      user: { name: string | null; email: string };
+    }>
+  >([]);
+  const [isVerifiedBuyer, setIsVerifiedBuyer] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState("");
+  const [reviewComment, setReviewComment] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewSuccessMsg, setReviewSuccessMsg] = useState<string | null>(null);
+  const [reviewErrorMsg, setReviewErrorMsg] = useState<string | null>(null);
+
   const numericPrice = Number(product.price);
   const numericSalePrice = product.salePrice != null ? Number(product.salePrice) : null;
   const effectivePrice = numericSalePrice ?? numericPrice;
@@ -65,14 +140,41 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailPro
     ? Math.round(((numericPrice - numericSalePrice) / numericPrice) * 100)
     : 0;
 
-  const currentImage = product.images[selectedImageIndex] || "https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=1200&q=80";
+  const currentImage =
+    product.images[selectedImageIndex] ||
+    "https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=1200&q=80";
+
+  const requiresFlavor = effectiveFlavors.length > 0;
+  const isFlavorMissing = requiresFlavor && !selectedFlavor;
+
+  // Fetch approved reviews and buyer verification on mount
+  useEffect(() => {
+    let isMounted = true;
+    getProductReviewsAction(product.id).then((res) => {
+      if (isMounted && res.success) {
+        setReviews(res.data);
+      }
+    });
+
+    checkIsVerifiedBuyerAction(product.id).then((res) => {
+      if (isMounted && res.success) {
+        setIsVerifiedBuyer(res.data.isVerified);
+        setIsAuthenticated(res.data.isAuthenticated);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [product.id]);
 
   const handleAddToCart = () => {
-    if (isOutOfStock) return;
+    if (isOutOfStock || isFlavorMissing) return;
 
     dispatch(
       addItem({
         id: product.id,
+        productId: product.id,
         name: product.name,
         slug: product.slug,
         price: numericPrice,
@@ -80,6 +182,7 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailPro
         image: currentImage,
         cacaoPercentage: product.cacaoPercentage,
         weight: product.weight,
+        selectedFlavor: selectedFlavor || null,
         quantity,
       })
     );
@@ -89,7 +192,44 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailPro
     dispatch(setCartOpen(true));
   };
 
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setReviewSuccessMsg(null);
+    setReviewErrorMsg(null);
+
+    if (!reviewComment.trim()) {
+      setReviewErrorMsg("Please enter your reflection or comment.");
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    try {
+      const res = await createReview({
+        productId: product.id,
+        rating: reviewRating,
+        title: reviewTitle.trim() || null,
+        comment: reviewComment.trim(),
+      });
+
+      if (res.success) {
+        setReviewSuccessMsg(res.data.message);
+        setReviewTitle("");
+        setReviewComment("");
+      } else {
+        setReviewErrorMsg(res.error.message || "Failed to submit review.");
+      }
+    } catch {
+      setReviewErrorMsg("An unexpected error occurred while submitting your review.");
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
   const potentialPoints = Math.floor(effectivePrice * quantity);
+  const averageRating =
+    reviews.length > 0
+      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+      : "5.0";
 
   return (
     <div className="space-y-16">
@@ -131,7 +271,9 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailPro
                   type="button"
                   onClick={() => setSelectedImageIndex(idx)}
                   className={`relative w-20 h-20 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${
-                    selectedImageIndex === idx ? "border-[#C45A3C] shadow-sm" : "border-[#E8DCCF] opacity-70 hover:opacity-100"
+                    selectedImageIndex === idx
+                      ? "border-[#C45A3C] shadow-sm"
+                      : "border-[#E8DCCF] opacity-70 hover:opacity-100"
                   }`}
                 >
                   <Image src={img} alt={`Thumbnail ${idx + 1}`} fill sizes="80px" className="object-cover" />
@@ -163,6 +305,17 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailPro
             <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#1C140D] leading-tight">
               {product.name}
             </h1>
+
+            {/* Rating Stars Summary */}
+            <div className="flex items-center gap-2 pt-1 text-xs text-[#634E3F]">
+              <div className="flex text-[#D4A853]">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-current" />
+                ))}
+              </div>
+              <span className="font-bold text-[#1C140D]">{averageRating}</span>
+              <span>({reviews.length} {reviews.length === 1 ? "review" : "reviews"})</span>
+            </div>
 
             {/* Price section */}
             <div className="flex items-baseline gap-3 pt-2">
@@ -198,6 +351,49 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailPro
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Task 4: Mandatory Flavor Selection UI */}
+          {effectiveFlavors.length > 0 && (
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs uppercase tracking-wider font-bold text-[#1C140D] flex items-center gap-1.5">
+                  <span>Select Flavor / Confection Type</span>
+                  <span className="text-red-500">*</span>
+                </label>
+                {selectedFlavor && (
+                  <span className="text-xs font-semibold text-[#C45A3C]">
+                    Chosen: {selectedFlavor}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2.5">
+                {effectiveFlavors.map((flavor) => {
+                  const isSelected = selectedFlavor === flavor;
+                  return (
+                    <button
+                      key={flavor}
+                      type="button"
+                      onClick={() => setSelectedFlavor(flavor)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                        isSelected
+                          ? "bg-[#1C140D] text-[#FAF7F2] border-[#1C140D] shadow-sm scale-102"
+                          : "bg-white text-[#634E3F] border-[#E8DCCF] hover:border-[#1C140D] hover:text-[#1C140D]"
+                      }`}
+                    >
+                      {flavor}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {isFlavorMissing && (
+                <p className="text-xs text-[#C45A3C] font-semibold">
+                  Please select an available flavor above to enable adding to your bag.
+                </p>
+              )}
             </div>
           )}
 
@@ -250,16 +446,20 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailPro
               <button
                 type="button"
                 onClick={handleAddToCart}
-                disabled={isOutOfStock}
+                disabled={isOutOfStock || isFlavorMissing}
                 className={`flex-1 w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-full font-semibold text-sm transition-all shadow-md ${
-                  isOutOfStock
+                  isOutOfStock || isFlavorMissing
                     ? "bg-[#E8DCCF] text-[#634E3F] cursor-not-allowed"
                     : isAdded
                     ? "bg-[#D4A853] text-[#1C140D]"
                     : "bg-[#1C140D] hover:bg-[#C45A3C] text-[#FAF7F2] hover:shadow-lg"
                 }`}
               >
-                {isAdded ? (
+                {isOutOfStock ? (
+                  "Sold Out"
+                ) : isFlavorMissing ? (
+                  "Choose a Flavor to Add"
+                ) : isAdded ? (
                   <>
                     <Check className="w-4 h-4" /> Added to Your Bag
                   </>
@@ -377,7 +577,162 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailPro
         )}
       </div>
 
-      {/* 3. Related Artisanal Creations */}
+      {/* 3. Verified Customer Reviews Section (Task 5) */}
+      <section className="bg-white rounded-3xl border border-[#E8DCCF] p-8 sm:p-10 shadow-xs space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#E8DCCF]">
+          <div>
+            <span className="text-xs uppercase tracking-[0.25em] text-[#C45A3C] font-bold block mb-1">
+              Verified Impressions
+            </span>
+            <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#1C140D]">
+              Customer Reviews
+            </h3>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex text-[#D4A853]">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-5 h-5 fill-current" />
+              ))}
+            </div>
+            <span className="font-serif text-2xl font-bold text-[#1C140D]">{averageRating}</span>
+            <span className="text-xs text-[#634E3F]">({reviews.length} approved)</span>
+          </div>
+        </div>
+
+        {/* Write a Review Section (Verified Buyers Only) */}
+        <div className="bg-[#FAF7F2] p-6 rounded-2xl border border-[#E8DCCF] space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="font-serif text-lg font-bold text-[#1C140D]">
+              Share Your Connoisseur Reflection
+            </h4>
+            {isVerifiedBuyer && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Verified Buyer
+              </span>
+            )}
+          </div>
+
+          {isVerifiedBuyer ? (
+            <form onSubmit={handleReviewSubmit} className="space-y-4">
+              {reviewSuccessMsg && (
+                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 font-medium">
+                  {reviewSuccessMsg}
+                </div>
+              )}
+              {reviewErrorMsg && (
+                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-900 font-medium">
+                  {reviewErrorMsg}
+                </div>
+              )}
+
+              {/* Star Rating Picker */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-[#1C140D]">Rating:</span>
+                <div className="flex gap-1 text-[#D4A853]">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setReviewRating(star)}
+                      className="p-1 hover:scale-110 transition-transform"
+                    >
+                      <Star
+                        className={`w-5 h-5 ${
+                          star <= reviewRating ? "fill-current" : "text-[#E8DCCF]"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <input
+                  type="text"
+                  value={reviewTitle}
+                  onChange={(e) => setReviewTitle(e.target.value)}
+                  placeholder="Review title (e.g. Exceptional depth of cacao)"
+                  className="w-full bg-white border border-[#E8DCCF] rounded-xl px-4 py-2.5 text-xs text-[#1C140D] focus:outline-hidden focus:border-[#C45A3C]"
+                />
+              </div>
+
+              <div>
+                <textarea
+                  rows={3}
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="Describe your tasting experience, snap, aroma, and finish..."
+                  className="w-full bg-white border border-[#E8DCCF] rounded-xl p-3.5 text-xs text-[#1C140D] focus:outline-hidden focus:border-[#C45A3C]"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmittingReview}
+                className="px-6 py-2.5 rounded-full bg-[#1C140D] hover:bg-[#C45A3C] text-white text-xs font-semibold transition-colors disabled:opacity-50"
+              >
+                {isSubmittingReview ? "Submitting..." : "Submit Review for Moderation"}
+              </button>
+            </form>
+          ) : (
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-white border border-[#E8DCCF]">
+              <ShieldCheck className="w-5 h-5 text-[#D4A853] shrink-0" />
+              <p className="text-xs text-[#634E3F]">
+                {isAuthenticated
+                  ? "Only verified buyers who have received a delivered order of this product can submit a review."
+                  : "Only verified buyers can review this product. Please sign in with your customer account."}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Approved Reviews List */}
+        <div className="space-y-4">
+          {reviews.length === 0 ? (
+            <div className="text-center py-8 text-xs text-[#634E3F] italic">
+              No customer reviews published yet. Be the first verified buyer to share your thoughts!
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {reviews.map((rev) => (
+                <div
+                  key={rev.id}
+                  className="p-5 rounded-2xl bg-[#FAF7F2] border border-[#E8DCCF] space-y-2.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex text-[#D4A853]">
+                      {[...Array(rev.rating)].map((_, i) => (
+                        <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                      ))}
+                    </div>
+                    <span className="text-[10px] text-[#634E3F]">
+                      {new Date(rev.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  {rev.title && (
+                    <h5 className="font-serif text-sm font-bold text-[#1C140D]">
+                      {rev.title}
+                    </h5>
+                  )}
+
+                  <p className="text-xs text-[#634E3F] leading-relaxed">
+                    &ldquo;{rev.comment}&rdquo;
+                  </p>
+
+                  <div className="flex items-center gap-2 pt-1 text-[11px] text-[#1C140D] font-medium">
+                    <span>{rev.user.name || "Customer"}</span>
+                    <span className="text-emerald-700 font-semibold">• Verified Buyer</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* 4. Related Artisanal Creations */}
       {relatedProducts.length > 0 && (
         <div className="space-y-8 pt-8">
           <div className="flex items-center justify-between">

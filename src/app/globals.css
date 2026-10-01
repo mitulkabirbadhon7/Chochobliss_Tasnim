@@ -85,3 +85,32 @@ body {
     padding-right: 2rem;
   }
 }
+
+/* Artisanal Showcase Time-Lapse Light & Shade Sweep Animation */
+@keyframes timelapseShade {
+  0% {
+    transform: translateX(-140%) skewX(-20deg);
+    opacity: 0.05;
+  }
+  30% {
+    opacity: 0.35;
+  }
+  70% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateX(240%) skewX(-20deg);
+    opacity: 0.05;
+  }
+}
+
+.animate-timelapse-shade {
+  animation: timelapseShade 8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-timelapse-shade {
+    animation: none !important;
+  }
+}
+

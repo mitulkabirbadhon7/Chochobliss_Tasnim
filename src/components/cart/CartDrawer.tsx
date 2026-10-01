@@ -166,11 +166,18 @@ export function CartDrawer() {
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
-                        {item.cacaoPercentage && (
-                          <span className="text-[11px] font-medium text-[#634E3F] tracking-wide uppercase">
-                            {item.cacaoPercentage}% Cacao
-                          </span>
-                        )}
+                        <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                          {item.selectedFlavor && (
+                            <span className="inline-block px-2 py-0.5 rounded-md bg-[#F5EDE4] text-[10px] font-bold text-[#C45A3C] border border-[#E8DCCF] uppercase tracking-wider">
+                              Flavor: {item.selectedFlavor}
+                            </span>
+                          )}
+                          {item.cacaoPercentage && (
+                            <span className="text-[11px] font-medium text-[#634E3F] tracking-wide uppercase">
+                              {item.cacaoPercentage}% Cacao
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="flex items-center justify-between mt-2">
@@ -244,11 +251,19 @@ export function CartDrawer() {
               </div>
 
               <Link
+                href="/checkout"
+                onClick={() => dispatch(setCartOpen(false))}
+                className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-[#C45A3C] hover:bg-[#a8492e] text-[#FAF7F2] rounded-xl font-semibold text-sm tracking-wide transition-all duration-200 shadow-md hover:shadow-lg"
+              >
+                Proceed to Checkout <ArrowRight className="w-4 h-4" />
+              </Link>
+
+              <Link
                 href="/cart"
                 onClick={() => dispatch(setCartOpen(false))}
-                className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-[#C45A3C] hover:bg-[#a8492e] text-[#FAF7F2] rounded-xl font-semibold text-sm tracking-wide transition-colors shadow-md"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-[#E8DCCF] bg-white hover:bg-[#FAF7F2] text-[#1C140D] rounded-xl font-medium text-xs tracking-wide transition-colors"
               >
-                View Full Bag & Checkout <ArrowRight className="w-4 h-4" />
+                View Full Bag
               </Link>
 
               <button

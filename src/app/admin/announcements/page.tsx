@@ -343,7 +343,7 @@ export default function AdminAnnouncementsPage() {
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Autumn Gifting Edit"
+                placeholder="Enter campaign title"
                 className="w-full bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3.5 py-2.5 text-xs text-[#1C140D]"
               />
             </div>

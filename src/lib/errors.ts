@@ -112,6 +112,14 @@ export type ActionResult<T> =
   | { success: false; error: ActionErrorPayload };
 
 /**
+ * Strips database credentials, connection strings, and sensitive tokens from error messages.
+ */
+export function sanitizeErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.replace(/(?:postgresql|postgres|redis|mysql):\/\/[^\s]+/gi, "[REDACTED_CONNECTION_URI]");
+}
+
+/**
  * Maps any error safely to an ActionResult without leaking secrets, stack traces,
  * or raw database internals.
  */

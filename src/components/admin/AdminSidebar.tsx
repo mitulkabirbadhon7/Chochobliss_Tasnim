@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -14,6 +15,7 @@ import {
   Menu,
   X,
   Radio,
+  Star,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -62,6 +64,12 @@ export function AdminSidebar({ ordersCount = 12 }: AdminSidebarProps) {
       icon: Layers,
       exact: false,
     },
+    {
+      label: "Customer Reviews",
+      href: "/admin/reviews",
+      icon: Star,
+      exact: false,
+    },
   ];
 
   const sidebarContent = (
@@ -69,8 +77,13 @@ export function AdminSidebar({ ordersCount = 12 }: AdminSidebarProps) {
       {/* Brand Header */}
       <div>
         <div className="flex items-center gap-3 px-2 py-3 mb-6 border-b border-[#634E3F]/40">
-          <div className="w-10 h-10 rounded-lg bg-[#C45A3C] flex items-center justify-center font-serif text-2xl font-bold text-white shadow-md">
-            C
+          <div className="relative w-10 h-10 shrink-0">
+            <Image
+              src="/images/logo.png"
+              alt="Chocobliss by Tasnim"
+              fill
+              className="object-contain drop-shadow-md"
+            />
           </div>
           <div>
             <div className="font-serif text-xl font-bold tracking-tight text-white leading-none">

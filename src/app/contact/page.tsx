@@ -89,30 +89,33 @@ export default function ContactPage() {
               </p>
 
               <div className="space-y-3 pt-1">
-                {ADMIN_CONTACT_EMAILS.map((adminEmail) => (
-                  <div
-                    key={adminEmail}
-                    className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E8DCCF] flex items-center justify-between gap-3"
-                  >
-                    <div className="truncate">
-                      <span className="text-[11px] uppercase tracking-wider font-bold text-[#C45A3C] block">
-                        {adminEmail.startsWith("mitul") ? "Administrator" : "Founder & Chocolatier"}
-                      </span>
+                {ADMIN_CONTACT_EMAILS.map((adminEmail) => {
+                  const isMitul = adminEmail.startsWith("mitul");
+                  return (
+                    <div
+                      key={adminEmail}
+                      className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E8DCCF] flex items-center justify-between gap-3"
+                    >
+                      <div className="truncate">
+                        <span className="text-[11px] uppercase tracking-wider font-bold text-[#C45A3C] block">
+                          {isMitul ? "Administrator" : "Founder & Chocolatier"}
+                        </span>
+                        <span className="text-sm font-semibold text-[#1C140D] truncate block">
+                          {isMitul ? "Executive Administration Desk" : "Tasnim · Master Chocolatier Desk"}
+                        </span>
+                        <span className="text-[11px] text-[#634E3F] block font-light">
+                          {isMitul ? "Direct & Confidential Channel" : "Artisan Studio & Bespoke Orders"}
+                        </span>
+                      </div>
                       <a
                         href={`mailto:${adminEmail}`}
-                        className="text-sm font-semibold text-[#1C140D] hover:text-[#C45A3C] transition-colors truncate block"
+                        className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-[#1C140D] text-[#FAF7F2] hover:bg-[#C45A3C] transition-colors shrink-0"
                       >
-                        {adminEmail}
+                        Write
                       </a>
                     </div>
-                    <a
-                      href={`mailto:${adminEmail}`}
-                      className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#1C140D] text-[#FAF7F2] hover:bg-[#C45A3C] transition-colors shrink-0"
-                    >
-                      Write
-                    </a>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="pt-2 border-t border-[#E8DCCF] space-y-4 text-xs text-[#634E3F]">
@@ -173,18 +176,15 @@ export default function ContactPage() {
                       Message Received
                     </h3>
                     <p className="text-sm text-[#634E3F] max-w-md mx-auto leading-relaxed">
-                      Thank you for contacting ChocoBliss. Your dispatch has been saved and connected to our
-                      administrators&apos; inboxes:
+                      Thank you for contacting ChocoBliss. Your dispatch has been received and delivered directly to both authorized boutique administrators:
                     </p>
                     <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-                      {successResult.adminEmails.map((email) => (
-                        <span
-                          key={email}
-                          className="px-3 py-1 rounded-full text-xs font-mono bg-[#FAF7F2] border border-[#E8DCCF] text-[#1C140D]"
-                        >
-                          {email}
-                        </span>
-                      ))}
+                      <span className="px-3.5 py-1 rounded-full text-xs font-semibold bg-[#FAF7F2] border border-[#E8DCCF] text-[#1C140D]">
+                        Executive Administration
+                      </span>
+                      <span className="px-3.5 py-1 rounded-full text-xs font-semibold bg-[#FAF7F2] border border-[#E8DCCF] text-[#1C140D]">
+                        Founder & Chocolatier Desk
+                      </span>
                     </div>
                   </div>
 
@@ -278,7 +278,7 @@ export default function ContactPage() {
                         required
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="Tasnim Khan"
+                        placeholder="Enter your name"
                         className="w-full px-4 py-2.5 rounded-xl border border-[#E8DCCF] focus:outline-none focus:ring-2 focus:ring-[#C45A3C] text-sm text-[#1C140D] bg-[#FAF7F2]/30"
                       />
                     </div>
@@ -292,7 +292,7 @@ export default function ContactPage() {
                         required
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder="you@example.com"
+                        placeholder="Enter your email"
                         className="w-full px-4 py-2.5 rounded-xl border border-[#E8DCCF] focus:outline-none focus:ring-2 focus:ring-[#C45A3C] text-sm text-[#1C140D] bg-[#FAF7F2]/30"
                       />
                     </div>
@@ -308,7 +308,7 @@ export default function ContactPage() {
                         type="tel"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        placeholder="+880 1712-345678"
+                        placeholder="Enter your phone number"
                         className="w-full px-4 py-2.5 rounded-xl border border-[#E8DCCF] focus:outline-none focus:ring-2 focus:ring-[#C45A3C] text-sm text-[#1C140D] bg-[#FAF7F2]/30"
                       />
                     </div>
@@ -322,7 +322,7 @@ export default function ContactPage() {
                         required
                         value={formData.subject}
                         onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                        placeholder="Regarding order, chocolate question, etc."
+                        placeholder="Enter your subject or inquiry topic"
                         className="w-full px-4 py-2.5 rounded-xl border border-[#E8DCCF] focus:outline-none focus:ring-2 focus:ring-[#C45A3C] text-sm text-[#1C140D] bg-[#FAF7F2]/30"
                       />
                     </div>
@@ -338,7 +338,7 @@ export default function ContactPage() {
                       rows={5}
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                      placeholder="Please share all relevant details (order numbers, description of issue, or inquiry) so our administrators can assist you efficiently..."
+                      placeholder="Enter your message or complaint details..."
                       className="w-full px-4 py-3 rounded-xl border border-[#E8DCCF] focus:outline-none focus:ring-2 focus:ring-[#C45A3C] text-sm text-[#1C140D] bg-[#FAF7F2]/30 resize-y"
                     />
                   </div>

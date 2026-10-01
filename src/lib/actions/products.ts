@@ -245,10 +245,12 @@ export async function createProduct(rawInput: unknown): Promise<ActionResult<{ i
         allergens: input.allergens,
         weight: input.weight ?? null,
         images: input.images,
+        hoverImage: input.hoverImage ?? null,
+        flavors: input.flavors ?? [],
         category: input.category,
         isFeatured: input.isFeatured,
         isPublished: input.isPublished,
-      },
+      } as any,
       select: { id: true, slug: true },
     });
 
@@ -316,7 +318,7 @@ export async function updateProduct(
     }
 
     // 7. Update in database
-    const updateData: Prisma.ProductUpdateInput = {};
+    const updateData: any = {};
     if (input.name !== undefined) updateData.name = input.name;
     if (input.slug !== undefined) updateData.slug = input.slug;
     if (input.description !== undefined) updateData.description = input.description;
@@ -333,6 +335,8 @@ export async function updateProduct(
     if (input.allergens !== undefined) updateData.allergens = input.allergens;
     if (input.weight !== undefined) updateData.weight = input.weight;
     if (input.images !== undefined) updateData.images = input.images;
+    if (input.hoverImage !== undefined) updateData.hoverImage = input.hoverImage;
+    if (input.flavors !== undefined) updateData.flavors = input.flavors;
     if (input.category !== undefined) updateData.category = input.category;
     if (input.isFeatured !== undefined) updateData.isFeatured = input.isFeatured;
     if (input.isPublished !== undefined) updateData.isPublished = input.isPublished;

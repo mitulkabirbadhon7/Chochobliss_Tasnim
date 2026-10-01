@@ -34,6 +34,9 @@ export default function RegisterPage() {
 
     setSuccess(true);
     setLoading(false);
+    setTimeout(() => {
+      window.location.href = "/dashboard";
+    }, 2200);
   };
 
   return (
@@ -46,16 +49,28 @@ export default function RegisterPage() {
 
         {success ? (
           <div className="p-6 bg-amber-50 border border-amber-200 text-[#1C140D] rounded-lg text-center space-y-4">
-            <h2 className="font-semibold text-lg text-[#C45A3C]">Welcome to Chocobliss!</h2>
-            <p className="text-xs text-[#634E3F]">
+            <div className="w-12 h-12 bg-amber-100 text-[#C45A3C] rounded-full flex items-center justify-center mx-auto text-xl font-bold">
+              ✓
+            </div>
+            <h2 className="font-serif font-bold text-xl text-[#1C140D]">Welcome to Chocobliss!</h2>
+            <p className="text-sm text-[#634E3F]">
               Your account has been created and credited with <strong>50 Cocoa Points</strong>.
             </p>
-            <a
-              href="/login"
-              className="inline-block py-2.5 px-6 bg-[#1C140D] hover:bg-[#C45A3C] text-[#F5EDE4] text-xs font-semibold rounded-lg transition-colors"
-            >
-              Sign In Now
-            </a>
+            <p className="text-xs text-[#8A7565]">Redirecting you to your account dashboard...</p>
+            <div className="flex flex-col sm:flex-row gap-2.5 justify-center pt-2">
+              <a
+                href="/dashboard"
+                className="py-2.5 px-6 bg-[#C45A3C] hover:bg-[#1C140D] text-white text-xs font-semibold rounded-lg transition-colors shadow"
+              >
+                Go to Dashboard
+              </a>
+              <a
+                href="/shop"
+                className="py-2.5 px-5 bg-white hover:bg-neutral-100 border border-[#E8DCCF] text-[#1C140D] text-xs font-semibold rounded-lg transition-colors"
+              >
+                Browse Shop
+              </a>
+            </div>
           </div>
         ) : (
           <>
@@ -75,7 +90,7 @@ export default function RegisterPage() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Amira Khan"
+                  placeholder="Enter your name"
                   className="w-full px-4 py-2.5 rounded-lg border border-[#E8DCCF] focus:outline-none focus:ring-2 focus:ring-[#C45A3C] text-sm text-[#1C140D]"
                 />
               </div>
@@ -89,7 +104,7 @@ export default function RegisterPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="amira@example.com"
+                  placeholder="Enter your email"
                   className="w-full px-4 py-2.5 rounded-lg border border-[#E8DCCF] focus:outline-none focus:ring-2 focus:ring-[#C45A3C] text-sm text-[#1C140D]"
                 />
               </div>
@@ -104,7 +119,7 @@ export default function RegisterPage() {
                   minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   className="w-full px-4 py-2.5 rounded-lg border border-[#E8DCCF] focus:outline-none focus:ring-2 focus:ring-[#C45A3C] text-sm text-[#1C140D]"
                 />
               </div>

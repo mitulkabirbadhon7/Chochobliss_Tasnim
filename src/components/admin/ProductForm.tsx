@@ -17,6 +17,8 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { createProduct, updateProduct, deleteProduct } from "@/lib/actions/products";
+import { uploadProductImageAction } from "@/lib/actions/upload";
+import { compressImage } from "@/lib/utils/image-compression";
 
 interface ProductFormProps {
   initialData?: {
@@ -35,6 +37,8 @@ interface ProductFormProps {
     allergens?: string[];
     weight?: string | null;
     images?: string[];
+    hoverImage?: string | null;
+    flavors?: string[];
     category?: string;
     isFeatured?: boolean;
     isPublished?: boolean;
@@ -58,7 +62,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
   const [inventory, setInventory] = useState(
     initialData?.inventory !== undefined ? String(initialData.inventory) : "25"
   );
-  const [category, setCategory] = useState(initialData?.category || "Truffles");
+  const [category, setCategory] = useState(initialData?.category || "Bar");
   const [cacaoPercentage, setCacaoPercentage] = useState(
     initialData?.cacaoPercentage ? String(initialData.cacaoPercentage) : "72"
   );
@@ -78,6 +82,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
   const [isPublished, setIsPublished] = useState(initialData?.isPublished ?? true);
 
   // Gallery state
+  // Gallery state
   const [images, setImages] = useState<string[]>(
     initialData?.images && initialData.images.length > 0
       ? initialData.images
@@ -86,7 +91,18 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
           "https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=800&auto=format&fit=crop&q=80",
         ]
   );
+  const [hoverImage, setHoverImage] = useState(initialData?.hoverImage || "");
   const [newImageUrl, setNewImageUrl] = useState("");
+  const [newHoverImageUrl, setNewHoverImageUrl] = useState("");
+
+  // Flavors / Types state
+  const [flavors, setFlavors] = useState<string[]>(
+    initialData?.flavors && initialData.flavors.length > 0
+      ? initialData.flavors
+      : ["Dark 72%", "White Milk 38%"]
+  );
+  const [newFlavorInput, setNewFlavorInput] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
 
   // Feedback State
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -118,6 +134,67 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
     setImages(images.filter((_, i) => i !== index));
   };
 
+  const handleClearAllImages = () => {
+    setImages([]);
+  };
+
+  const handleAddFlavor = () => {
+    const val = newFlavorInput.trim();
+    if (!val) return;
+    if (!flavors.includes(val)) {
+      setFlavors([...flavors, val]);
+    }
+    setNewFlavorInput("");
+  };
+
+  const handleRemoveFlavor = (index: number) => {
+    setFlavors(flavors.filter((_, i) => i !== index));
+  };
+
+  const handleFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    isForHover = false
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setErrorMsg("Selected image file exceeds 10MB limit.");
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      setErrorMsg(null);
+      // Client-side canvas compression (~80% quality WebP)
+      const compressed = await compressImage(file, {
+        maxWidth: 1920,
+        maxHeight: 1920,
+        quality: 0.8,
+        mimeType: "image/webp",
+      });
+
+      const formData = new FormData();
+      formData.append("file", compressed);
+
+      const res = await uploadProductImageAction(formData);
+      if (res.success) {
+        if (isForHover) {
+          setHoverImage(res.data.url);
+        } else {
+          setImages((prev) => [...prev, res.data.url]);
+        }
+      } else {
+        setErrorMsg(res.error.message || "Failed to upload image.");
+      }
+    } catch {
+      setErrorMsg("Error compressing or uploading image.");
+    } finally {
+      setIsUploading(false);
+      e.target.value = "";
+    }
+  };
+
   const handleSubmit = async (publishState: boolean) => {
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -135,6 +212,10 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
     }
     if (!sku.trim()) {
       setErrorMsg("SKU is required.");
+      return;
+    }
+    if (flavors.length === 0) {
+      setErrorMsg("At least one available flavor or type variant is required.");
       return;
     }
 
@@ -160,6 +241,8 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
         .filter(Boolean),
       weight: weight.trim() || null,
       images,
+      hoverImage: hoverImage.trim() || null,
+      flavors,
       isFeatured,
       isPublished: publishState,
     };
@@ -303,7 +386,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                 type="text"
                 value={name}
                 onChange={(e) => handleNameChange(e.target.value)}
-                placeholder="e.g. Midnight Cacao Truffle Box"
+                placeholder="Enter product title"
                 className="w-full bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3.5 py-2.5 text-xs text-[#1C140D] focus:outline-none focus:ring-2 focus:ring-[#C45A3C] focus:bg-white"
                 required
               />
@@ -317,7 +400,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                 rows={4}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="A hand-finished collection of single-origin chocolates..."
+                placeholder="Enter product description and tasting story..."
                 className="w-full bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl p-3.5 text-xs text-[#1C140D] focus:outline-none focus:ring-2 focus:ring-[#C45A3C] focus:bg-white leading-relaxed"
               />
               <span className="text-[10px] text-[#634E3F]/70">{description.length} characters</span>
@@ -325,18 +408,36 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-[#1C140D] mb-1">Category</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3 py-2 text-xs font-medium text-[#1C140D]"
-                >
-                  <option value="Truffles">Truffles</option>
-                  <option value="Bars">Chocolate bars</option>
-                  <option value="Gift Boxes">Gift boxes</option>
-                  <option value="Bites">Bites</option>
-                  <option value="Seasonal">Seasonal</option>
-                </select>
+                <label className="block text-xs font-semibold text-[#1C140D] mb-1">Category / Collection *</label>
+                <div className="space-y-1.5">
+                  <select
+                    value={["Bar", "Customized Bar", "mini"].includes(category) ? category : "Custom"}
+                    onChange={(e) => {
+                      if (e.target.value === "Custom") {
+                        setCategory("");
+                      } else {
+                        setCategory(e.target.value);
+                      }
+                    }}
+                    className="w-full bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3 py-2 text-xs font-bold text-[#1C140D] focus:border-[#C45A3C]"
+                  >
+                    <option value="Bar">1. Bar</option>
+                    <option value="Customized Bar">2. Customized Bar</option>
+                    <option value="mini">3. mini</option>
+                    <option value="Custom">+ Enter custom category...</option>
+                  </select>
+                  {!["Bar", "Customized Bar", "mini"].includes(category) && (
+                    <input
+                      type="text"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      placeholder="Enter custom category name"
+                      className="w-full bg-white border border-[#C45A3C] rounded-xl px-3 py-1.5 text-xs text-[#1C140D] focus:outline-none"
+                      autoFocus
+                      required
+                    />
+                  )}
+                </div>
               </div>
 
               <div>
@@ -345,7 +446,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                   type="number"
                   value={cacaoPercentage}
                   onChange={(e) => setCacaoPercentage(e.target.value)}
-                  placeholder="e.g. 72"
+                  placeholder="Enter cacao percentage"
                   className="w-full bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3 py-2 text-xs text-[#1C140D]"
                 />
               </div>
@@ -356,7 +457,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                   type="text"
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
-                  placeholder="e.g. 150g / 5.3 oz"
+                  placeholder="Enter package weight"
                   className="w-full bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3 py-2 text-xs text-[#1C140D]"
                 />
               </div>
@@ -370,50 +471,156 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                 <h2 className="text-sm font-bold text-[#1C140D]">Product gallery</h2>
                 <p className="text-xs text-[#634E3F]">The first image is used as the storefront cover.</p>
               </div>
-              <span className="text-xs font-semibold text-[#634E3F]">{images.length} images</span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-semibold text-[#634E3F]">{images.length} images</span>
+                {images.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearAllImages}
+                    className="text-xs text-rose-600 hover:text-rose-800 font-medium transition-colors"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {images.map((img, i) => (
-                <div
-                  key={i}
-                  className="relative group rounded-xl overflow-hidden border border-[#E8DCCF] bg-[#FAF7F2] aspect-square"
-                >
-                  <img src={img} alt={`Product ${i + 1}`} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveImage(i)}
-                      className="p-1.5 rounded-lg bg-white/90 text-red-600 hover:bg-white"
-                      title="Remove image"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+            {images.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {images.map((img, i) => (
+                  <div
+                    key={i}
+                    className="relative group rounded-xl overflow-hidden border border-[#E8DCCF] bg-[#FAF7F2] aspect-square"
+                  >
+                    <img src={img} alt={`Product ${i + 1}`} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(i)}
+                        className="p-1.5 rounded-lg bg-white/90 text-red-600 hover:bg-white"
+                        title="Remove image"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    {i === 0 && (
+                      <span className="absolute bottom-1.5 left-1.5 bg-[#1C140D]/80 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                        Cover
+                      </span>
+                    )}
                   </div>
-                  {i === 0 && (
-                    <span className="absolute bottom-1.5 left-1.5 bg-[#1C140D]/80 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
-                      Cover
-                    </span>
-                  )}
-                </div>
-              ))}
+                ))}
+              </div>
+            ) : (
+              <div className="py-6 border-2 border-dashed border-[#E8DCCF] rounded-2xl text-center bg-[#FAF7F2]/50">
+                <Upload className="w-8 h-8 text-[#634E3F] mx-auto mb-2 opacity-50" />
+                <p className="text-xs font-semibold text-[#1C140D]">No product pictures added yet</p>
+                <p className="text-[11px] text-[#634E3F] mt-0.5">Upload a picture from your device or paste an image URL below.</p>
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2">
+              <label
+                className={`cursor-pointer px-4 py-2 rounded-xl bg-[#C45A3C] hover:bg-[#a8492e] text-[#FAF7F2] text-xs font-semibold flex items-center justify-center gap-2 transition-colors shrink-0 shadow-xs ${
+                  isUploading ? "opacity-60 pointer-events-none" : ""
+                }`}
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>{isUploading ? "Compressing & Uploading..." : "Upload Picture from Computer"}</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  disabled={isUploading}
+                  onChange={(e) => handleFileUpload(e, false)}
+                />
+              </label>
+
+              <div className="flex items-center gap-2 flex-1">
+                <input
+                  type="url"
+                  value={newImageUrl}
+                  onChange={(e) => setNewImageUrl(e.target.value)}
+                  placeholder="Enter image URL (https://...) to add"
+                  className="flex-1 bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3.5 py-2 text-xs text-[#1C140D] focus:outline-hidden focus:border-[#C45A3C]"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddImage}
+                  className="px-3.5 py-2 rounded-xl bg-white border border-[#E8DCCF] text-xs font-semibold text-[#1C140D] hover:bg-[#FAF7F2] shrink-0"
+                >
+                  Add URL
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 2B. Hover Image (Storefront Alternate View) */}
+          <div className="bg-white p-6 rounded-2xl border border-[#E8DCCF] shadow-xs space-y-4">
+            <div>
+              <h2 className="text-sm font-bold text-[#1C140D]">Hover Image (Alternate Angle / Second View)</h2>
+              <p className="text-xs text-[#634E3F]">
+                Displayed automatically when a customer hovers over this chocolate on the storefront and collection listings.
+              </p>
             </div>
 
-            <div className="flex items-center gap-2 pt-2">
-              <input
-                type="url"
-                value={newImageUrl}
-                onChange={(e) => setNewImageUrl(e.target.value)}
-                placeholder="Enter image URL to add..."
-                className="flex-1 bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3.5 py-2 text-xs text-[#1C140D]"
-              />
-              <button
-                type="button"
-                onClick={handleAddImage}
-                className="px-3.5 py-2 rounded-xl bg-white border border-[#E8DCCF] text-xs font-semibold text-[#1C140D] hover:bg-[#FAF7F2]"
+            {hoverImage ? (
+              <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-[#E8DCCF] bg-[#FAF7F2] group">
+                <img src={hoverImage} alt="Hover preview" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setHoverImage("")}
+                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/90 text-red-600 hover:bg-white shadow-xs"
+                  title="Remove hover image"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+                <span className="absolute bottom-1.5 left-1.5 bg-[#D4A853] text-[#1C140D] text-[9px] font-bold px-1.5 py-0.5 rounded">
+                  Hover Swap
+                </span>
+              </div>
+            ) : (
+              <p className="text-xs text-[#634E3F] italic">No hover image set. The second gallery photo will be used if available.</p>
+            )}
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+              <label
+                className={`cursor-pointer px-4 py-2 rounded-xl bg-[#1C140D] hover:bg-[#38281B] text-[#FAF7F2] text-xs font-semibold flex items-center justify-center gap-2 transition-colors shrink-0 shadow-xs ${
+                  isUploading ? "opacity-60 pointer-events-none" : ""
+                }`}
               >
-                Add Image
-              </button>
+                <Upload className="w-3.5 h-3.5 text-[#D4A853]" />
+                <span>{isUploading ? "Uploading..." : "Upload Hover Image"}</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  disabled={isUploading}
+                  onChange={(e) => handleFileUpload(e, true)}
+                />
+              </label>
+
+              <div className="flex items-center gap-2 flex-1">
+                <input
+                  type="url"
+                  value={newHoverImageUrl}
+                  onChange={(e) => setNewHoverImageUrl(e.target.value)}
+                  placeholder="Or paste hover image URL (https://...)"
+                  className="flex-1 bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3.5 py-2 text-xs text-[#1C140D]"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (newHoverImageUrl.trim()) {
+                      setHoverImage(newHoverImageUrl.trim());
+                      setNewHoverImageUrl("");
+                    }
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-white border border-[#E8DCCF] text-xs font-semibold text-[#1C140D] hover:bg-[#FAF7F2] shrink-0"
+                >
+                  Set Hover URL
+                </button>
+              </div>
             </div>
           </div>
 
@@ -434,7 +641,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                   step="0.01"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
-                  placeholder="2450.00"
+                  placeholder="Enter price in BDT"
                   className="w-full bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3.5 py-2 text-xs text-[#1C140D] font-bold"
                   required
                 />
@@ -449,7 +656,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                   step="0.01"
                   value={salePrice}
                   onChange={(e) => setSalePrice(e.target.value)}
-                  placeholder="Optional regular price"
+                  placeholder="Enter discounted price (optional)"
                   className="w-full bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3.5 py-2 text-xs text-[#1C140D]"
                 />
               </div>
@@ -462,7 +669,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                   type="number"
                   value={inventory}
                   onChange={(e) => setInventory(e.target.value)}
-                  placeholder="25"
+                  placeholder="Enter available stock count"
                   className="w-full bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3.5 py-2 text-xs text-[#1C140D] font-bold"
                   required
                 />
@@ -478,7 +685,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                   type="text"
                   value={sku}
                   onChange={(e) => setSku(e.target.value)}
-                  placeholder="CB-TRF-024"
+                  placeholder="Enter product SKU code"
                   className="w-full bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3.5 py-2 text-xs font-mono text-[#1C140D]"
                   required
                 />
@@ -492,10 +699,118 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                   type="text"
                   value={origin}
                   onChange={(e) => setOrigin(e.target.value)}
-                  placeholder="e.g. Sambirano Valley, Madagascar"
+                  placeholder="Enter cacao origin region or country"
                   className="w-full bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3.5 py-2 text-xs text-[#1C140D]"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* 3B. Available Flavors / Types Selection (Task 4) */}
+          <div className="bg-white p-6 rounded-2xl border-2 border-[#D4A853]/40 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h2 className="text-sm font-bold text-[#1C140D] flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[#D4A853]" />
+                  <span>Available Flavors & Types Selection *</span>
+                </h2>
+                <p className="text-xs text-[#634E3F] mt-0.5">
+                  Customers must choose one of these flavor variants on the storefront before adding to cart.
+                </p>
+              </div>
+              <span className="text-[11px] font-bold text-[#C45A3C] bg-[#C45A3C]/10 px-2.5 py-1 rounded-full shrink-0">
+                {flavors.length} {flavors.length === 1 ? "Option Active" : "Options Active"}
+              </span>
+            </div>
+
+            {/* Quick-Add Preset Flavors */}
+            <div className="space-y-1.5 pt-1 border-t border-[#E8DCCF]/60">
+              <span className="text-[11px] font-semibold text-[#634E3F] block">
+                Quick-Add Popular Flavors:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  "Dark",
+                  "White Milk",
+                  "Chochonut",
+                  "Dark 72%",
+                  "Milk Chocolate",
+                  "White Vanilla",
+                  "Roasted Pistachio Slab",
+                  "Custom Blend",
+                ].map((preset) => {
+                  const alreadyAdded = flavors.includes(preset);
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      disabled={alreadyAdded}
+                      onClick={() => {
+                        if (!alreadyAdded) setFlavors((prev) => [...prev, preset]);
+                      }}
+                      className={`text-[11px] px-2.5 py-1 rounded-lg font-medium transition-all ${
+                        alreadyAdded
+                          ? "bg-[#FAF7F2] text-[#634E3F]/40 border border-[#E8DCCF]/40 cursor-not-allowed"
+                          : "bg-[#FAF7F2] hover:bg-[#D4A853]/20 hover:text-[#1C140D] text-[#634E3F] border border-[#E8DCCF] hover:border-[#D4A853]"
+                      }`}
+                    >
+                      {alreadyAdded ? `✓ ${preset}` : `+ ${preset}`}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Active Flavor Badges */}
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[11px] font-semibold text-[#1C140D] block">
+                Current Active Flavors on Product Page:
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {flavors.map((flv, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1C140D] text-xs font-semibold text-[#FAF7F2] border border-[#38281B] shadow-xs"
+                  >
+                    <span>{flv}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFlavor(idx)}
+                      className="p-0.5 text-[#E8DCCF]/70 hover:text-red-400 rounded-full transition-colors"
+                      title={`Remove ${flv}`}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+                {flavors.length === 0 && (
+                  <p className="text-xs text-red-600 font-medium">At least one flavor variant is required.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Custom Flavor Text Input */}
+            <div className="flex items-center gap-2 pt-1 border-t border-[#E8DCCF]/60">
+              <input
+                type="text"
+                value={newFlavorInput}
+                onChange={(e) => setNewFlavorInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddFlavor();
+                  }
+                }}
+                placeholder="Type custom flavor name (e.g., Hazelnut Truffle, Rose Berry)"
+                className="flex-1 bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3.5 py-2 text-xs text-[#1C140D] focus:outline-hidden focus:border-[#C45A3C]"
+              />
+              <button
+                type="button"
+                onClick={handleAddFlavor}
+                className="px-4 py-2 rounded-xl bg-[#1C140D] hover:bg-[#C45A3C] text-white text-xs font-semibold transition-colors shrink-0 shadow-xs"
+              >
+                Add Custom Flavor
+              </button>
             </div>
           </div>
 
@@ -523,7 +838,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                   type="text"
                   value={allergensStr}
                   onChange={(e) => setAllergensStr(e.target.value)}
-                  placeholder="Contains nuts, milk"
+                  placeholder="Enter allergens (Dairy, Tree nuts, etc.)"
                   className="w-full bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3.5 py-2 text-xs text-[#1C140D]"
                 />
               </div>
@@ -534,7 +849,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                   type="text"
                   value={flavorNotesStr}
                   onChange={(e) => setFlavorNotesStr(e.target.value)}
-                  placeholder="Floral, Red fruit, Honey"
+                  placeholder="Enter flavor notes separated by commas"
                   className="w-full bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3.5 py-2 text-xs text-[#1C140D]"
                 />
               </div>
@@ -562,7 +877,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                 type="text"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
-                placeholder="midnight-cacao-truffle-box"
+                placeholder="Enter URL handle slug"
                 className="w-full bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3.5 py-2 text-xs font-mono text-[#1C140D]"
               />
             </div>
@@ -631,8 +946,24 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
           </div>
 
           {/* Organization */}
-          <div className="bg-white p-6 rounded-2xl border border-[#E8DCCF] shadow-xs space-y-3">
+          <div className="bg-white p-6 rounded-2xl border border-[#E8DCCF] shadow-xs space-y-4">
             <h2 className="text-sm font-bold text-[#1C140D]">Organization</h2>
+            
+            <div>
+              <label className="block text-xs font-semibold text-[#1C140D] mb-1">
+                Category *
+              </label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3 py-2 text-xs font-semibold text-[#1C140D] focus:outline-none focus:ring-2 focus:ring-[#C45A3C]"
+              >
+                <option value="Bar">Bar</option>
+                <option value="Customized Bar">Customized Bar</option>
+                <option value="mini">mini</option>
+              </select>
+            </div>
+
             <div>
               <span className="text-[11px] font-semibold text-[#634E3F] block">Vendor</span>
               <span className="text-xs font-bold text-[#1C140D]">Chocobliss by Tasnim</span>

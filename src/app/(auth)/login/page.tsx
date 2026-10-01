@@ -1,10 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase/client";
-import { createSessionAction, devLoginAction } from "@/lib/actions/auth";
-import { ShieldCheck } from "lucide-react";
+import { loginWithCredentialsAction } from "@/lib/actions/auth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -18,36 +15,25 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // 1. Automatically detect user role from database
-      const devResult = await devLoginAction(email);
-      if (devResult.success) {
-        // Automatically route: if role is ADMIN go to /admin, else /dashboard
-        if (devResult.data.user.role === "ADMIN") {
-          window.location.href = "/admin";
+      // 1. Authoritative credential login with password verification
+      const loginResult = await loginWithCredentialsAction({ email, password });
+      if (loginResult.success) {
+        const user = loginResult.data.user;
+        const searchParams = new URLSearchParams(window.location.search);
+        const redirectUrl = searchParams.get("redirect");
+
+        if (user.role === "ADMIN") {
+          window.location.href = redirectUrl && redirectUrl.startsWith("/admin") ? redirectUrl : "/admin";
+        } else if (redirectUrl && redirectUrl.startsWith("/")) {
+          window.location.href = redirectUrl;
         } else {
           window.location.href = "/dashboard";
         }
         return;
       }
 
-      // 2. Fallback to Firebase client authentication
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const idToken = await userCredential.user.getIdToken();
-      const sessionResult = await createSessionAction(idToken);
-
-      if (!sessionResult.success) {
-        setError(sessionResult.error.message);
-        setLoading(false);
-        return;
-      }
-
-      // Automatically route according to verified role
-      const user = sessionResult.data.user;
-      if (user.role === "ADMIN") {
-        window.location.href = "/admin";
-      } else {
-        window.location.href = "/dashboard";
-      }
+      setError(loginResult.error.message);
+      setLoading(false);
     } catch {
       setError("Invalid email or password.");
       setLoading(false);
@@ -78,7 +64,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder="Enter your email"
               className="w-full px-4 py-2.5 rounded-lg border border-[#E8DCCF] focus:outline-none focus:ring-2 focus:ring-[#C45A3C] text-sm text-[#1C140D]"
             />
           </div>
@@ -92,7 +78,7 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Enter your password"
               className="w-full px-4 py-2.5 rounded-lg border border-[#E8DCCF] focus:outline-none focus:ring-2 focus:ring-[#C45A3C] text-sm text-[#1C140D]"
             />
           </div>

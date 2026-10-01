@@ -1,8 +1,15 @@
+import path from "path";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   turbopack: {
-    root: "..",
+    root: path.resolve(process.cwd(), ".."),
+  },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
   },
   images: {
     remotePatterns: [

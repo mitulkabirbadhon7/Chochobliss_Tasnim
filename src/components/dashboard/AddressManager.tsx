@@ -320,7 +320,7 @@ export function AddressManager({ initialAddresses }: AddressManagerProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[#634E3F] font-semibold mb-1">
-                    Label (e.g. Home, Atelier)
+                    Address Label
                   </label>
                   <input
                     type="text"
@@ -328,7 +328,7 @@ export function AddressManager({ initialAddresses }: AddressManagerProps) {
                     value={formData.label}
                     onChange={(e) => setFormData({ ...formData, label: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl border border-[#E8DCCF] bg-[#FAF7F2] focus:outline-none focus:border-[#C45A3C]"
-                    placeholder="Home"
+                    placeholder="Enter your address label (Home, Work, etc.)"
                   />
                 </div>
                 <div>
@@ -339,7 +339,7 @@ export function AddressManager({ initialAddresses }: AddressManagerProps) {
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl border border-[#E8DCCF] bg-[#FAF7F2] focus:outline-none focus:border-[#C45A3C]"
-                    placeholder="Tasnim Khan"
+                    placeholder="Enter recipient's full name"
                   />
                 </div>
               </div>
@@ -352,7 +352,7 @@ export function AddressManager({ initialAddresses }: AddressManagerProps) {
                   value={formData.street}
                   onChange={(e) => setFormData({ ...formData, street: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl border border-[#E8DCCF] bg-[#FAF7F2] focus:outline-none focus:border-[#C45A3C]"
-                  placeholder="House 14, Road 4, Dhanmondi"
+                  placeholder="Enter street address and house/apartment details"
                 />
               </div>
 
@@ -364,6 +364,7 @@ export function AddressManager({ initialAddresses }: AddressManagerProps) {
                     required
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    placeholder="Enter city"
                     className="w-full px-3 py-2 rounded-xl border border-[#E8DCCF] bg-[#FAF7F2] focus:outline-none focus:border-[#C45A3C]"
                   />
                 </div>
@@ -374,6 +375,7 @@ export function AddressManager({ initialAddresses }: AddressManagerProps) {
                     required
                     value={formData.state}
                     onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                    placeholder="Enter state / division"
                     className="w-full px-3 py-2 rounded-xl border border-[#E8DCCF] bg-[#FAF7F2] focus:outline-none focus:border-[#C45A3C]"
                   />
                 </div>
@@ -385,7 +387,7 @@ export function AddressManager({ initialAddresses }: AddressManagerProps) {
                     value={formData.postalCode}
                     onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl border border-[#E8DCCF] bg-[#FAF7F2] focus:outline-none focus:border-[#C45A3C]"
-                    placeholder="1205"
+                    placeholder="Enter postal code"
                   />
                 </div>
               </div>
@@ -399,7 +401,7 @@ export function AddressManager({ initialAddresses }: AddressManagerProps) {
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl border border-[#E8DCCF] bg-[#FAF7F2] focus:outline-none focus:border-[#C45A3C]"
-                    placeholder="+880 1712 345678"
+                    placeholder="Enter your phone number"
                   />
                 </div>
                 <div>

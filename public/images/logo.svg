@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72" fill="none" width="100%" height="100%">
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E8C87A" />
+      <stop offset="50%" stop-color="#D4A853" />
+      <stop offset="100%" stop-color="#B28430" />
+    </linearGradient>
+    <linearGradient id="cacaoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2D1F15" />
+      <stop offset="100%" stop-color="#1C140D" />
+    </linearGradient>
+    <linearGradient id="terracottaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E07052" />
+      <stop offset="100%" stop-color="#C45A3C" />
+    </linearGradient>
+  </defs>
+
+  <!-- Artisanal Cacao Emblem Icon -->
+  <g transform="translate(6, 6)">
+    <!-- Outer Shield / Hexagonal Emblem -->
+    <rect x="2" y="2" width="56" height="56" rx="16" fill="url(#cacaoGradient)" stroke="url(#goldGradient)" stroke-width="1.5" />
+    
+    <!-- Cacao Pod & Cocoa Leaves Geometric Stylization -->
+    <path d="M30 14 C20 22 18 36 28 46 C32 42 36 34 36 24 C36 18 32 15 30 14 Z" fill="url(#goldGradient)" opacity="0.95" />
+    <path d="M30 14 C36 20 40 30 34 44 C31 46 29 46 28 46 C34 38 34 26 30 14 Z" fill="url(#terracottaGradient)" opacity="0.85" />
+    
+    <!-- Delicate Star Accents -->
+    <circle cx="30" cy="19" r="1.5" fill="#FAF7F2" />
+    <circle cx="30" cy="27" r="1.5" fill="#FAF7F2" />
+    <circle cx="30" cy="35" r="1.5" fill="#FAF7F2" />
+  </g>
+
+  <!-- Typography: Chocobliss -->
+  <text x="76" y="38" font-family="'Playfair Display', 'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="28" font-weight="700" fill="#1C140D" letter-spacing="-0.5">
+    Chocobliss
+  </text>
+
+  <!-- Subtitle: BY TASNIM -->
+  <text x="78" y="54" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="9.5" font-weight="700" fill="#D4A853" letter-spacing="3.5">
+    BY TASNIM
+  </text>
+  
+  <!-- Subtle Ornamental Divider -->
+  <line x1="172" y1="51" x2="240" y2="51" stroke="#E8DCCF" stroke-width="1" />
+  <circle cx="244" cy="51" r="1.5" fill="#C45A3C" />
+</svg>

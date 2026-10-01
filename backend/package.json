@@ -1,0 +1,15 @@
+{
+  "name": "@chocobliss/backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Chocobliss by Tasnim Backend Engine: Prisma ORM, Server Actions, Auth & REST API",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "tsx src/server.ts",
+    "dev": "tsx watch src/server.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.10.0",
+    "zod": "^4.6.5"
+  }
+}

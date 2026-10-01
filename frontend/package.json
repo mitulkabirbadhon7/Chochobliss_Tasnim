@@ -1,0 +1,12 @@
+{
+  "name": "@chocobliss/frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Chocobliss by Tasnim Frontend: Next.js App Router, Tailwind CSS, Canvas Animation, Redux Store",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  }
+}

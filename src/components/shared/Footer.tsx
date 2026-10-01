@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Sparkles,
@@ -12,24 +13,154 @@ import {
   ArrowRight,
   Megaphone,
   Mail,
+  Star,
 } from "lucide-react";
+import { getPublicSiteContentAction } from "@/lib/actions/admin";
+import { getCuratedTestimonialsAction } from "@/lib/actions/review";
 
 export function Footer() {
   const pathname = usePathname();
+  const [instagramHref, setInstagramHref] = useState("https://instagram.com/chocobliss.tasnim");
+  const [facebookHref, setFacebookHref] = useState("https://facebook.com/chocoblissbytasnim");
+  const [testimonials, setTestimonials] = useState<
+    Array<{
+      id: string;
+      rating: number;
+      title: string | null;
+      comment: string;
+      userName: string;
+      productName: string;
+    }>
+  >([
+    {
+      id: "t1",
+      rating: 5,
+      title: "Pure Terroir Experience",
+      comment: "The 72% Madagascar bar blew me away with its tart raspberry notes. Truly artisanal chocolate.",
+      userName: "Amira Rahman",
+      productName: "Dark Bar 72%",
+    },
+    {
+      id: "t2",
+      rating: 5,
+      title: "Unmatched Gloss & Snap",
+      comment: "Arrived in insulated thermal foil in perfect condition. The single-origin conching is exceptional.",
+      userName: "Farhan Chowdhury",
+      productName: "Artisanal Truffles",
+    },
+    {
+      id: "t3",
+      rating: 5,
+      title: "Bespoke Perfection",
+      comment: "Custom roasted slab with pistachio was a huge hit for our anniversary. Tasnim's craftsmanship is second to none.",
+      userName: "Sadia Karim",
+      productName: "Customized Bar",
+    },
+  ]);
+
+  useEffect(() => {
+    let isMounted = true;
+    getPublicSiteContentAction("social_links")
+      .then((res) => {
+        if (isMounted && res?.success && res?.data && typeof res.data.content === "object") {
+          const c = res.data.content as any;
+          if (c.instagramUrl) setInstagramHref(c.instagramUrl);
+          if (c.facebookUrl) setFacebookHref(c.facebookUrl);
+        }
+      })
+      .catch(() => {});
+
+    getCuratedTestimonialsAction(3)
+      .then((res) => {
+        if (isMounted && res.success && res.data.length > 0) {
+          setTestimonials(res.data);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   if (pathname.startsWith("/admin")) {
     return null;
   }
 
   const categories = [
-    { name: "Single-Origin Bars", href: "/shop?category=Bars" },
-    { name: "Velvet Truffles", href: "/shop?category=Truffles" },
-    { name: "Bespoke Gifts", href: "/shop?category=Gifts" },
-    { name: "Seasonal Reserves", href: "/shop?category=Seasonal" },
+    { name: "Bar", href: "/shop?category=Bar" },
+    { name: "Customized Bar", href: "/shop?category=Customized+Bar" },
+    { name: "mini", href: "/shop?category=mini" },
   ];
 
   return (
     <footer className="bg-[#1C140D] text-[#F5EDE4] border-t border-[#634E3F]/40 mt-auto">
-      {/* 1. Value Proposition Strip */}
+      {/* 1. Verified Connoisseur Reviews & Testimonials (Task 5) */}
+      <div className="border-b border-[#634E3F]/30 py-10 bg-[#160f0a]">
+        <div className="container-custom">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div>
+              <span className="text-[10px] uppercase tracking-[0.25em] text-[#D4A853] font-bold block mb-1">
+                Verified Reflections
+              </span>
+              <h3 className="font-serif text-2xl font-bold text-[#F5EDE4]">
+                Loved by Discerning Connoisseurs
+              </h3>
+            </div>
+            <Link
+              href="/reviews"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#D4A853] hover:bg-[#FAF7F2] text-[#1C140D] font-bold text-xs uppercase tracking-wider transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 w-fit"
+            >
+              <Star className="w-3.5 h-3.5 fill-current" />
+              <span>Review</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+            {testimonials.map((t) => (
+              <div
+                key={t.id}
+                className="p-5 rounded-2xl bg-[#2A1D13] border border-[#634E3F]/40 flex flex-col justify-between space-y-3"
+              >
+                <div className="space-y-2">
+                  <div className="flex text-[#D4A853]">
+                    {[...Array(t.rating)].map((_, i) => (
+                      <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                    ))}
+                  </div>
+                  {t.title && (
+                    <h5 className="font-serif text-sm font-bold text-[#F5EDE4]">
+                      {t.title}
+                    </h5>
+                  )}
+                  <p className="text-xs text-[#E8DCCF]/80 leading-relaxed italic line-clamp-3">
+                    &ldquo;{t.comment}&rdquo;
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-[#634E3F]/30 flex items-center justify-between text-[11px]">
+                  <span className="font-bold text-[#F5EDE4]">{t.userName}</span>
+                  <span className="text-[#D4A853] font-medium">Verified Customer</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Centered Button to See All Reviews */}
+          <div className="text-center pt-8">
+            <Link
+              href="/reviews"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#2A1D13] hover:bg-[#D4A853] hover:text-[#1C140D] text-[#FAF7F2] border border-[#634E3F]/50 text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-sm hover:shadow-md hover:scale-102"
+            >
+              <Star className="w-3.5 h-3.5 text-[#D4A853] fill-current" />
+              <span>View All Customer Reviews</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Value Proposition Strip */}
       <div className="border-b border-[#634E3F]/30 py-8 bg-[#150e09]">
         <div className="container-custom grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="flex items-center gap-3.5">
@@ -79,13 +210,23 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* Brand Info & Shop Now & Social Links */}
           <div className="lg:col-span-2 space-y-5">
-            <Link href="/" className="inline-block">
-              <span className="font-serif text-3xl font-bold tracking-tight text-[#F5EDE4] hover:text-[#C45A3C] transition-colors">
-                Chocobliss
-              </span>
-              <span className="block text-xs uppercase tracking-[0.25em] text-[#D4A853] font-semibold mt-0.5">
-                By Tasnim
-              </span>
+            <Link href="/" className="inline-flex items-center gap-3.5 group">
+              <div className="relative w-12 h-12 shrink-0 group-hover:scale-105 transition-transform duration-300">
+                <Image
+                  src="/images/logo.png"
+                  alt="Chocobliss by Tasnim"
+                  fill
+                  className="object-contain drop-shadow-md"
+                />
+              </div>
+              <div>
+                <span className="font-serif text-3xl font-bold tracking-tight text-[#F5EDE4] group-hover:text-[#C45A3C] transition-colors leading-none block">
+                  Chocobliss
+                </span>
+                <span className="block text-xs uppercase tracking-[0.25em] text-[#D4A853] font-semibold mt-1">
+                  By Tasnim
+                </span>
+              </div>
             </Link>
             <p className="text-sm text-[#E8DCCF]/80 max-w-sm leading-relaxed">
               Handcrafted in Dhaka, Bangladesh. Dedicated to celebrating the complex terroir of heritage cacao through contemporary confectionery artistry.
@@ -114,7 +255,7 @@ export function Footer() {
               </span>
               <div className="flex flex-wrap items-center gap-3">
                 <a
-                  href="https://instagram.com"
+                  href={instagramHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#2A1F17] hover:bg-[#E1306C] text-[#FAF7F2] text-xs font-medium border border-[#634E3F]/50 transition-all hover:scale-105"
@@ -127,7 +268,7 @@ export function Footer() {
                 </a>
 
                 <a
-                  href="https://facebook.com"
+                  href={facebookHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#2A1F17] hover:bg-[#1877F2] text-[#FAF7F2] text-xs font-medium border border-[#634E3F]/50 transition-all hover:scale-105"
@@ -193,6 +334,16 @@ export function Footer() {
                 >
                   <Mail className="w-3.5 h-3.5 text-[#C45A3C]" />
                   <span>Contact With Us</span>
+                </Link>
+              </div>
+
+              <div>
+                <Link
+                  href="/reviews"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#2A1F17] hover:bg-[#D4A853] hover:text-[#1C140D] text-[#FAF7F2] text-xs font-medium border border-[#634E3F]/40 transition-colors w-full sm:w-auto"
+                >
+                  <Star className="w-3.5 h-3.5 text-[#D4A853]" />
+                  <span>Review</span>
                 </Link>
               </div>
 

@@ -1,13 +1,15 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 export interface CartItem {
-  id: string; // Product ID
+  id: string; // Composite key: `${productId}-${selectedFlavor || 'default'}`
+  productId?: string; // Direct Product ID reference
   name: string;
   slug: string;
   price: number;
   salePrice?: number | null;
   image: string;
   quantity: number;
+  selectedFlavor?: string | null;
   weight?: string | null;
   cacaoPercentage?: number | null;
 }
@@ -27,7 +29,11 @@ export const cartSlice = createSlice({
   initialState,
   reducers: {
     addItem: (state, action: PayloadAction<Omit<CartItem, "quantity"> & { quantity?: number }>) => {
-      const existingItem = state.items.find((item) => item.id === action.payload.id);
+      const baseProductId = action.payload.productId || action.payload.id;
+      const flavorKey = action.payload.selectedFlavor?.trim() || null;
+      const compositeId = flavorKey ? `${baseProductId}-${flavorKey}` : baseProductId;
+
+      const existingItem = state.items.find((item) => item.id === compositeId);
       const addQty = action.payload.quantity && action.payload.quantity > 0 ? action.payload.quantity : 1;
 
       if (existingItem) {
@@ -35,6 +41,9 @@ export const cartSlice = createSlice({
       } else {
         state.items.push({
           ...action.payload,
+          id: compositeId,
+          productId: baseProductId,
+          selectedFlavor: flavorKey,
           quantity: addQty,
         });
       }

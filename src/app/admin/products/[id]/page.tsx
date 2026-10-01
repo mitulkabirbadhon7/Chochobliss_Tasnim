@@ -40,6 +40,8 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
         allergens: p.allergens,
         weight: p.weight,
         images: p.images,
+        hoverImage: p.hoverImage || null,
+        flavors: p.flavors || [],
         category: p.category,
         isFeatured: p.isFeatured,
         isPublished: p.isPublished,

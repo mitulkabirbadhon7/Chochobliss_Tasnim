@@ -11,15 +11,14 @@ import {
   HeartHandshake,
   Award,
   Star,
-  Quote,
   Flame,
 } from "lucide-react";
 
 export const revalidate = 1800; // 30 minutes cache revalidation
 
 export default async function HomePage() {
-  // Query authoritative active featured products and announcements from Neon DB
-  const [featuredProducts, activeAnnouncements] = await Promise.all([
+  // Query authoritative active products and announcements from Neon DB
+  const [featuredProducts, activeAnnouncements, categoriesContent, showcaseContent, allRecentProducts, totalProductsCount] = await Promise.all([
     prisma.product.findMany({
       where: {
         isFeatured: true,
@@ -40,41 +39,172 @@ export default async function HomePage() {
       take: 1,
       orderBy: { createdAt: "desc" },
     }),
+    prisma.siteContent.findUnique({ where: { key: "homepage_categories" } }),
+    prisma.siteContent.findUnique({ where: { key: "homepage_showcase" } }),
+    prisma.product.findMany({
+      where: {
+        isPublished: true,
+        deletedAt: null,
+      },
+      take: 8,
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.product.count({
+      where: {
+        isPublished: true,
+        deletedAt: null,
+      },
+    }),
   ]);
 
   const activeAnnouncement = activeAnnouncements[0];
 
-  const collections = [
+  // Dynamic fallback: if no products explicitly checked as isFeatured, show latest published products
+  const displayFeatured = featuredProducts.length > 0 ? featuredProducts : allRecentProducts.slice(0, 4);
+
+  // Derive dynamic category product mappings from user's actual database creations
+  const barProduct = allRecentProducts.find(
+    (p) => p.category.toLowerCase() === "bar" || p.name.toLowerCase().includes("bar")
+  );
+  const customProduct = allRecentProducts.find(
+    (p) => p.category.toLowerCase().includes("custom") || p.name.toLowerCase().includes("custom")
+  );
+  const miniProduct = allRecentProducts.find(
+    (p) => p.category.toLowerCase().includes("mini") || p.name.toLowerCase().includes("mini")
+  );
+
+  const defaultCategories = [
     {
-      title: "Single-Origin Dark Bars",
-      description: "Terroir-driven 68% to 85% single-origin cacao from Madagascar, Ecuador, and Colombia.",
-      href: "/shop?category=Bars",
-      image: "https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=800&q=80",
-      tag: "Terroir Nuances",
+      title: "Bar",
+      description:
+        barProduct?.description ||
+        "Terroir-driven single-origin dark and milk chocolate bars crafted from rare cacao beans.",
+      href: "/shop?category=Bar",
+      image:
+        barProduct?.images?.[0] ||
+        "https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=800&q=80",
+      hoverImage: barProduct?.hoverImage || (barProduct?.images && barProduct.images.length > 1 ? barProduct.images[1] : null),
+      tag: "SINGLE ORIGIN",
     },
     {
-      title: "Velvet Ganache Truffles",
-      description: "Hand-rolled couture truffles with passionfruit, smoked sea salt, and Piedmont hazelnut.",
-      href: "/shop?category=Truffles",
-      image: "https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&w=800&q=80",
-      tag: "Silk Ganache",
+      title: "Customized Bar",
+      description:
+        customProduct?.description ||
+        "Hand-poured bespoke chocolate bars custom-infused with roasted nuts, berries, and personalized inscriptions.",
+      href: "/shop?category=Customized+Bar",
+      image:
+        customProduct?.images?.[0] ||
+        "https://images.unsplash.com/photo-1606312619070-d48b4c652a52?auto=format&fit=crop&w=800&q=80",
+      hoverImage: customProduct?.hoverImage || (customProduct?.images && customProduct.images.length > 1 ? customProduct.images[1] : null),
+      tag: "BESPOKE CREATION",
     },
     {
-      title: "Grand Tasting Gift Boxes",
-      description: "Two-tier keepsake presentation boxes curated for true chocolate connoisseurs.",
-      href: "/shop?category=Gift+Boxes",
-      image: "https://images.unsplash.com/photo-1582293041079-7814c2f12063?auto=format&fit=crop&w=800&q=80",
-      tag: "Couture Gifting",
+      title: "mini",
+      description:
+        miniProduct?.description ||
+        "Velvety bite-sized chocolates, mini bars, and delicate cocoa confections crafted for every sweet craving.",
+      href: "/shop?category=mini",
+      image:
+        miniProduct?.images?.[0] ||
+        "https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&w=800&q=80",
+      hoverImage: miniProduct?.hoverImage || (miniProduct?.images && miniProduct.images.length > 1 ? miniProduct.images[1] : null),
+      tag: "ARTISANAL BITES",
     },
   ];
+
+  let collections = defaultCategories;
+  if (categoriesContent && typeof categoriesContent.content === "object" && categoriesContent.content !== null) {
+    const raw = categoriesContent.content as any;
+    if (Array.isArray(raw.items) && raw.items.length > 0) {
+      collections = raw.items;
+    }
+  }
+
+  const defaultShowcase = [
+    {
+      title: "Molten Artisanal Ganache",
+      subtitle: "70% Single-Origin Cacao",
+      image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80",
+    },
+    {
+      title: "Gold-Dusted Truffles",
+      subtitle: "Hand-Rolled Artisan Gems",
+      image: "https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=800&q=80",
+    },
+    {
+      title: "Customized Roasted Slabs",
+      subtitle: "Pistachio & Sea Salt Inscription",
+      image: "https://images.unsplash.com/photo-1606312619070-d48b4c652a52?auto=format&fit=crop&w=800&q=80",
+    },
+    {
+      title: "Mini Cacao Bonbons",
+      subtitle: "Bite-Sized Indulgence",
+      image: "https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&w=800&q=80",
+    },
+  ];
+
+  let showcaseItems = defaultShowcase;
+  if (showcaseContent && typeof showcaseContent.content === "object" && showcaseContent.content !== null) {
+    const raw = showcaseContent.content as any;
+    if (Array.isArray(raw.items) && raw.items.length > 0) {
+      showcaseItems = raw.items;
+    }
+  }
 
   return (
     <div className="flex-1 flex flex-col">
       {/* 1. Hero Canvas Scroll Sequence */}
       <HeroCanvas totalFrames={120} framePrefix="/frames/ezgif-frame-" frameExtension=".jpg" />
 
+      {/* 2. Non-Clickable Lucrative Showcase Gallery (Pure Visual Eye-Candy) */}
+      <section className="py-16 px-6 bg-[#1C140D] text-[#FAF7F2] border-y border-[#38281B] relative overflow-hidden">
+        <div className="container-custom">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
+            <div>
+              <span className="text-xs uppercase tracking-[0.25em] text-[#D4A853] font-bold block mb-2">
+                Atelier Showcase · Visual Impressions
+              </span>
+              <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-[#FAF7F2]">
+                Artisanal Confectionery Showcase
+              </h2>
+            </div>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FAF7F2]/10 border border-[#FAF7F2]/15 text-xs text-[#E8DCCF]">
+              <Sparkles className="w-3.5 h-3.5 text-[#D4A853]" />
+              <span>Showcase Only · Handcrafted in Dhaka</span>
+            </div>
+          </div>
 
-      {/* 3. Curated Collections Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+            {showcaseItems.map((item, idx) => (
+              <div
+                key={idx}
+                className="group relative aspect-4/5 rounded-2xl overflow-hidden shadow-lg border border-[#38281B] hover:border-[#D4A853]/60 bg-[#2A1D13] select-none cursor-default transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(212,168,83,0.22)]"
+              >
+                <Image
+                  src={item.image}
+                  alt={item.title || "Artisanal Chocolate Showcase"}
+                  fill
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-linear-to-t from-[#1C140D] via-[#1C140D]/30 to-transparent opacity-85 group-hover:opacity-65 transition-opacity duration-500" />
+                {/* Time-lapse shade sweep light effect that shines and intensifies on mouse hover */}
+                <div className="absolute -inset-full bg-linear-to-r from-transparent via-[#FAF7F2]/20 group-hover:via-[#D4A853]/35 to-transparent animate-timelapse-shade pointer-events-none transition-all duration-500" />
+                <div className="absolute bottom-0 inset-x-0 p-4 space-y-1.5 z-10 pointer-events-none">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-[#D4A853] block group-hover:tracking-widest transition-all duration-300">
+                    {item.subtitle || "Artisan Batch"}
+                  </span>
+                  <p className="font-serif text-sm sm:text-base font-bold text-[#FAF7F2] group-hover:text-[#D4A853] transition-colors duration-300 leading-tight">
+                    {item.title}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Curated Collections Grid (Clickable Categories: Bar, Customized Bar, mini with Hover Image Swap) */}
       <section className="py-20 px-6 bg-[#FAF7F2]">
         <div className="container-custom">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-4">
@@ -95,42 +225,57 @@ export default async function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {collections.map((col) => (
-              <Link
-                key={col.title}
-                href={col.href}
-                className="group relative h-96 rounded-2xl overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-end p-8 border border-[#E8DCCF]"
-              >
-                <Image
-                  src={col.image}
-                  alt={col.title}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 33vw"
-                  className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                />
-                <div className="absolute inset-0 bg-linear-to-t from-[#1C140D] via-[#1C140D]/50 to-transparent" />
+            {collections.map((col) => {
+              const secondaryImage = (col as any).hoverImage || null;
 
-                <div className="relative z-10 space-y-2">
-                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#D4A853]/90 text-[#1C140D] text-[10px] font-bold uppercase tracking-wider">
-                    {col.tag}
-                  </span>
-                  <h3 className="font-serif text-2xl font-bold text-[#F5EDE4] group-hover:text-[#D4A853] transition-colors">
-                    {col.title}
-                  </h3>
-                  <p className="text-xs text-[#E8DCCF]/80 line-clamp-2 leading-relaxed font-light">
-                    {col.description}
-                  </p>
-                </div>
-              </Link>
-            ))}
+              return (
+                <Link
+                  key={col.title}
+                  href={col.href}
+                  className="group relative h-80 sm:h-96 rounded-2xl overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-end p-6 sm:p-8 border border-[#E8DCCF]"
+                >
+                  {/* Default Base Image */}
+                  <Image
+                    src={col.image}
+                    alt={col.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                  />
+                  {/* Hover Swap Image (Only displayed if an actual hover image is available) */}
+                  {secondaryImage && (
+                    <Image
+                      src={secondaryImage}
+                      alt={`${col.title} alternate view`}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      className="object-cover opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 ease-out"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-linear-to-t from-[#1C140D] via-[#1C140D]/50 to-transparent" />
+
+                  <div className="relative z-10 space-y-2">
+                    <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#D4A853]/90 text-[#1C140D] text-[10px] font-bold uppercase tracking-wider">
+                      {col.tag}
+                    </span>
+                    <h3 className="font-serif text-2xl font-bold text-[#F5EDE4] group-hover:text-[#D4A853] transition-colors">
+                      {col.title}
+                    </h3>
+                    <p className="text-xs text-[#E8DCCF]/80 line-clamp-2 leading-relaxed font-light">
+                      {col.description}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* 4. Featured Artisanal Chocolates (Real Database Records) */}
-      <section className="py-20 px-6 bg-[#F5EDE4]/40 border-t border-[#E8DCCF]">
+      <section className="py-16 sm:py-20 px-4 sm:px-6 bg-[#F5EDE4]/40 border-t border-[#E8DCCF]">
         <div className="container-custom">
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
+          <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14 space-y-3">
             <span className="text-xs uppercase tracking-[0.25em] text-[#D4A853] font-bold block">
               Hand-Selected Batches
             </span>
@@ -143,7 +288,7 @@ export default async function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProducts.map((product) => (
+            {displayFeatured.map((product) => (
               <ProductCard
                 key={product.id}
                 product={{
@@ -155,12 +300,12 @@ export default async function HomePage() {
             ))}
           </div>
 
-          <div className="mt-14 text-center">
+          <div className="mt-12 sm:mt-14 text-center">
             <Link
               href="/shop"
               className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#1C140D] hover:bg-[#C45A3C] text-[#FAF7F2] font-semibold text-sm transition-all shadow-md hover:shadow-lg"
             >
-              View All 8 Confections in Boutique <ArrowRight className="w-4 h-4" />
+              View All {totalProductsCount || 8} Confections in Boutique <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -213,76 +358,6 @@ export default async function HomePage() {
               sizes="(max-width: 1024px) 100vw, 50vw"
               className="object-cover"
             />
-          </div>
-        </div>
-      </section>
-
-      {/* 6. Connoisseur Reviews & Testimonials */}
-      <section className="py-20 px-6 bg-[#FAF7F2] border-t border-[#E8DCCF]">
-        <div className="container-custom">
-          <div className="text-center max-w-xl mx-auto mb-14 space-y-2">
-            <span className="text-xs uppercase tracking-[0.25em] text-[#C45A3C] font-bold block">
-              Connoisseur Reflections
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#1C140D]">
-              Loved by Discerning Palates
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="p-8 rounded-2xl bg-white border border-[#E8DCCF] shadow-xs flex flex-col justify-between space-y-4">
-              <div className="space-y-3">
-                <div className="flex text-[#D4A853]">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-current" />
-                  ))}
-                </div>
-                <Quote className="w-6 h-6 text-[#C45A3C]/40" />
-                <p className="text-sm text-[#634E3F] leading-relaxed italic">
-                  &ldquo;The 72% Madagascar bar blew me away with its tart raspberry notes. You can genuinely taste the terroir, unlike anything on grocery store shelves.&rdquo;
-                </p>
-              </div>
-              <div>
-                <strong className="block text-xs font-bold text-[#1C140D]">Amira Rahman</strong>
-                <span className="text-[11px] text-[#634E3F]">Dhaka • Verified Customer</span>
-              </div>
-            </div>
-
-            <div className="p-8 rounded-2xl bg-white border border-[#E8DCCF] shadow-xs flex flex-col justify-between space-y-4">
-              <div className="space-y-3">
-                <div className="flex text-[#D4A853]">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-current" />
-                  ))}
-                </div>
-                <Quote className="w-6 h-6 text-[#C45A3C]/40" />
-                <p className="text-sm text-[#634E3F] leading-relaxed italic">
-                  &ldquo;The velvet truffle collection was packaged in thermal insulation with ice gel. Arrived pristine in the Dhaka humidity. A truly luxurious gift.&rdquo;
-                </p>
-              </div>
-              <div>
-                <strong className="block text-xs font-bold text-[#1C140D]">Farhan Chowdhury</strong>
-                <span className="text-[11px] text-[#634E3F]">Gulshan • Verified Customer</span>
-              </div>
-            </div>
-
-            <div className="p-8 rounded-2xl bg-white border border-[#E8DCCF] shadow-xs flex flex-col justify-between space-y-4">
-              <div className="space-y-3">
-                <div className="flex text-[#D4A853]">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-current" />
-                  ))}
-                </div>
-                <Quote className="w-6 h-6 text-[#C45A3C]/40" />
-                <p className="text-sm text-[#634E3F] leading-relaxed italic">
-                  &ldquo;The Grand Cru box is my go-to corporate gift. Tasnim included our custom note on textured cream cardstock. Exceptional attention to detail.&rdquo;
-                </p>
-              </div>
-              <div>
-                <strong className="block text-xs font-bold text-[#1C140D]">Sadia Karim</strong>
-                <span className="text-[11px] text-[#634E3F]">Banani • Corporate Patron</span>
-              </div>
-            </div>
           </div>
         </div>
       </section>

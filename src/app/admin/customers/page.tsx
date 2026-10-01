@@ -580,7 +580,7 @@ export default function AdminCustomersPage() {
                         type="text"
                         value={blockReason}
                         onChange={(e) => setBlockReason(e.target.value)}
-                        placeholder="Reason (e.g., suspicious order attempts)"
+                        placeholder="Enter reason for deactivation"
                         className="w-full bg-white border border-rose-300 rounded-lg px-3 py-1.5 text-xs text-[#1C140D]"
                       />
                       <div className="flex items-center gap-2">

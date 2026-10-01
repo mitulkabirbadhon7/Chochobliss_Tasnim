@@ -601,7 +601,7 @@ export default function AdminOrdersPage() {
                       type="text"
                       value={trackingNumber}
                       onChange={(e) => setTrackingNumber(e.target.value)}
-                      placeholder="PTH-260928-18421"
+                      placeholder="Enter tracking number"
                       className="w-full bg-[#FAF7F2] border border-[#E8DCCF] rounded-xl px-3 py-2 text-xs font-mono text-[#1C140D]"
                     />
                   </div>

@@ -46,6 +46,7 @@ export const shippingAddressSchema = z.object({
 
 export const orderItemInputSchema = z.object({
   productId: z.string().trim().min(1, "Product ID is required."),
+  selectedFlavor: z.string().trim().max(100).nullable().optional(),
   quantity: z.coerce
     .number()
     .int()

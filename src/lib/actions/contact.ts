@@ -6,16 +6,9 @@ import { rateLimit } from "@/lib/rate-limit";
 
 import { ADMIN_CONTACT_EMAILS } from "@/lib/constants/admins";
 
-const contactSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters."),
-  email: z.string().email("Please provide a valid email address."),
-  phone: z.string().optional(),
-  category: z.enum(["COMPLAINT", "INQUIRY", "FEEDBACK", "CUSTOM_ORDER", "GENERAL"]).default("GENERAL"),
-  subject: z.string().min(3, "Subject must be at least 3 characters."),
-  message: z.string().min(10, "Message must be at least 10 characters."),
-});
+import { contactFormSchema, type ContactFormInput } from "@/lib/validations/contact";
 
-export type ContactInput = z.infer<typeof contactSchema>;
+export type ContactInput = ContactFormInput;
 
 export type ContactActionResult =
   | { success: true; data: { id: string; directMailtoUrl: string; adminEmails: string[] } }
@@ -32,7 +25,7 @@ export async function submitContactMessageAction(rawInput: unknown): Promise<Con
   }
 
   // 2. Validation
-  const validation = contactSchema.safeParse(rawInput);
+  const validation = contactFormSchema.safeParse(rawInput);
   if (!validation.success) {
     return {
       success: false,
@@ -58,10 +51,7 @@ export async function submitContactMessageAction(rawInput: unknown): Promise<Con
       },
     });
 
-    // 4. Log routing notification to the two fixed admin Gmail accounts
-    console.log(
-      `📬 [CONTACT DISPATCH] New message #${savedMessage.id} (${category}): "${subject}" from ${name} <${email}>. Forwarding to admins: ${ADMIN_CONTACT_EMAILS.join(", ")}`
-    );
+    // 4. Contact message persisted to Neon DB for admin inbox review
 
     // 5. Generate direct mailto link for direct sending as well
     const mailtoRecipients = ADMIN_CONTACT_EMAILS.join(",");

@@ -19,6 +19,8 @@ export interface ProductCardProps {
     origin?: string | null;
     flavorNotes?: string[];
     images: string[];
+    hoverImage?: string | null;
+    flavors?: string[];
     category: string;
     weight?: string | null;
   };
@@ -34,6 +36,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const isOutOfStock = product.inventory <= 0;
   const isLowStock = product.inventory > 0 && product.inventory <= 5;
   const primaryImage = product.images[0] || "https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=800&q=80";
+  const hoverImage = product.hoverImage || (product.images.length > 1 ? product.images[1] : null);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -51,6 +54,7 @@ export function ProductCard({ product }: ProductCardProps) {
         image: primaryImage,
         cacaoPercentage: product.cacaoPercentage,
         weight: product.weight,
+        selectedFlavor: product.flavors && product.flavors.length > 0 ? product.flavors[0] : null,
         quantity: 1,
       })
     );
@@ -62,8 +66,9 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <div className="group relative flex flex-col bg-white rounded-2xl border border-[#E8DCCF] overflow-hidden shadow-2xs hover:shadow-md transition-all duration-300">
-      {/* 1. Image Container */}
+      {/* 1. Image Container with Pure CSS Hover Image Swap */}
       <Link href={`/shop/${product.slug}`} className="relative aspect-4/3 w-full overflow-hidden bg-[#F5EDE4] block">
+        {/* Default Primary Image */}
         <Image
           src={primaryImage}
           alt={product.name}
@@ -71,6 +76,17 @@ export function ProductCard({ product }: ProductCardProps) {
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
         />
+
+        {/* Hover Alternate Image */}
+        {hoverImage && (
+          <Image
+            src={hoverImage}
+            alt={`${product.name} alternate view`}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover absolute inset-0 opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500 ease-out"
+          />
+        )}
 
         {/* Floating Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">

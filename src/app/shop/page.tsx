@@ -71,7 +71,19 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   ]);
 
   const totalPages = Math.ceil(totalCount / pageSize);
-  const categories = ["All", "Bars", "Truffles", "Gift Boxes", "Seasonal"];
+
+  const dbCategories = await prisma.product.findMany({
+    where: { isPublished: true, deletedAt: null },
+    select: { category: true },
+    distinct: ["category"],
+  });
+  const coreCategories = ["All", "Bar", "Customized Bar", "mini"];
+  const categories = Array.from(
+    new Set([
+      ...coreCategories,
+      ...dbCategories.map((p) => p.category).filter(Boolean),
+    ])
+  );
 
   return (
     <div className="flex-1 py-12 px-6 bg-[#FAF7F2]">
@@ -136,7 +148,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
                 type="text"
                 name="search"
                 defaultValue={searchQuery}
-                placeholder="Search by flavor, origin (e.g. Madagascar, Citrus)..."
+                placeholder="Enter flavor, origin or chocolate name..."
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#E8DCCF] bg-[#FAF7F2] text-sm text-[#1C140D] placeholder-[#634E3F]/60 focus:bg-white focus:outline-hidden focus:border-[#C45A3C] transition-colors"
               />
             </div>

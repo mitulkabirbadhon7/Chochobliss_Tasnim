@@ -45,6 +45,7 @@ export interface OrderItemSummary {
   productId: string | null;
   productName: string;
   productImage: string | null;
+  selectedFlavor?: string | null;
   unitPrice: number;
   quantity: number;
   subtotal: number;
@@ -76,7 +77,7 @@ export interface OrderSummary {
  * 1. User ID is extracted exclusively from the authenticated session (client cannot spoof).
  * 2. Prices, subtotals, and total amounts are calculated from authoritative DB product records.
  * 3. Atomic transaction prevents inventory overselling and concurrency race conditions.
- * 4. Product snapshots (name, image, price) are permanently frozen in OrderItem.
+ * 4. Product snapshots (name, image, price, selectedFlavor) are permanently frozen in OrderItem.
  */
 export async function createOrder(
   rawInput: unknown
@@ -102,17 +103,23 @@ export async function createOrder(
 
     const input: CreateOrderInput = validation.data;
 
-    // Consolidate duplicate product IDs in the cart if any
-    const itemMap = new Map<string, number>();
+    // Consolidate duplicate products + flavors in the cart if any
+    const itemMap = new Map<string, { productId: string; selectedFlavor: string | null; quantity: number }>();
     for (const item of input.items) {
-      itemMap.set(item.productId, (itemMap.get(item.productId) || 0) + item.quantity);
+      const key = `${item.productId}::${item.selectedFlavor || ""}`;
+      const existing = itemMap.get(key);
+      if (existing) {
+        existing.quantity += item.quantity;
+      } else {
+        itemMap.set(key, {
+          productId: item.productId,
+          selectedFlavor: item.selectedFlavor || null,
+          quantity: item.quantity,
+        });
+      }
     }
-    const consolidatedItems = Array.from(itemMap.entries()).map(([productId, quantity]) => ({
-      productId,
-      quantity,
-    }));
-
-    const productIds = consolidatedItems.map((i) => i.productId);
+    const consolidatedItems = Array.from(itemMap.values());
+    const productIds = Array.from(new Set(consolidatedItems.map((i) => i.productId)));
 
     // 4. Retrieve authoritative product records from PostgreSQL
     const dbProducts = await prisma.product.findMany({
@@ -124,7 +131,16 @@ export async function createOrder(
 
     const dbProductMap = new Map(dbProducts.map((p) => [p.id, p]));
 
-    // 5. Validate availability, publishing status, and inventory
+    // Check total inventory required per product across all flavor variants
+    const totalQtyPerProduct = new Map<string, number>();
+    for (const item of consolidatedItems) {
+      totalQtyPerProduct.set(
+        item.productId,
+        (totalQtyPerProduct.get(item.productId) || 0) + item.quantity
+      );
+    }
+
+    // 5. Validate availability, publishing status, flavor availability, and inventory
     for (const item of consolidatedItems) {
       const product = dbProductMap.get(item.productId);
 
@@ -136,7 +152,20 @@ export async function createOrder(
         throw new ValidationError(`"${product.name}" is currently unavailable for purchase.`);
       }
 
-      if (product.inventory < item.quantity) {
+      // Validate selected flavor is available for this product if product defines flavors
+      if (product.flavors && product.flavors.length > 0) {
+        if (!item.selectedFlavor) {
+          throw new ValidationError(`Please select an available flavor for "${product.name}".`);
+        }
+        if (!product.flavors.includes(item.selectedFlavor)) {
+          throw new ValidationError(
+            `Flavor "${item.selectedFlavor}" is not available for "${product.name}". Available options: ${product.flavors.join(", ")}`
+          );
+        }
+      }
+
+      const totalRequired = totalQtyPerProduct.get(item.productId) || item.quantity;
+      if (product.inventory < totalRequired) {
         throw new ValidationError(
           `Insufficient stock for "${product.name}". Only ${product.inventory} available.`
         );
@@ -149,6 +178,7 @@ export async function createOrder(
       productId: string;
       productName: string;
       productImage: string | null;
+      selectedFlavor: string | null;
       unitPrice: Prisma.Decimal;
       quantity: number;
       subtotal: Prisma.Decimal;
@@ -166,6 +196,7 @@ export async function createOrder(
         productId: product.id,
         productName: product.name,
         productImage: product.images[0] || null,
+        selectedFlavor: item.selectedFlavor || null,
         unitPrice: unitPriceDecimal,
         quantity: item.quantity,
         subtotal: itemSubtotalDecimal,
@@ -223,15 +254,15 @@ export async function createOrder(
     // 7. Atomic Database Transaction
     // Ensures all inventory decrements, order creation, items, and loyalty points succeed together
     const createdOrder = await prisma.$transaction(async (tx) => {
-      // a. Concurrently decrement inventory with atomic condition guard
-      for (const item of consolidatedItems) {
+      // a. Concurrently decrement inventory with atomic condition guard across variants
+      for (const [productId, qty] of totalQtyPerProduct.entries()) {
         const updateResult = await tx.product.updateMany({
           where: {
-            id: item.productId,
-            inventory: { gte: item.quantity }, // Prevents race condition overselling
+            id: productId,
+            inventory: { gte: qty }, // Prevents race condition overselling
           },
           data: {
-            inventory: { decrement: item.quantity },
+            inventory: { decrement: qty },
           },
         });
 

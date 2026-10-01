@@ -753,3 +753,14 @@ export async function updateSiteContentAction(key: string, rawInput: unknown) {
     return handleActionError(error);
   }
 }
+
+export async function getPublicSiteContentAction(key: string) {
+  try {
+    const record = await prisma.siteContent.findUnique({
+      where: { key },
+    });
+    return { success: true as const, data: record };
+  } catch (error) {
+    return handleActionError(error);
+  }
+}

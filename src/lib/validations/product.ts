@@ -34,8 +34,30 @@ export const productBaseSchema = z.object({
   allergens: z.array(z.string().trim()).default([]),
   weight: z.string().trim().max(50).nullable().optional(),
   images: z
-    .array(z.string().url("Each image must be a valid URL."))
+    .array(
+      z.string().refine(
+        (val) =>
+          val.startsWith("http://") ||
+          val.startsWith("https://") ||
+          val.startsWith("/") ||
+          val.startsWith("data:image/"),
+        { message: "Each image must be a valid URL, local path, or image data." }
+      )
+    )
     .min(1, "At least one product image is required."),
+  hoverImage: z
+    .string()
+    .refine(
+      (val) =>
+        val.startsWith("http://") ||
+        val.startsWith("https://") ||
+        val.startsWith("/") ||
+        val.startsWith("data:image/"),
+      { message: "Hover image must be a valid URL, local path, or image data." }
+    )
+    .nullable()
+    .optional(),
+  flavors: z.array(z.string().trim()).default([]),
   category: z.string().trim().min(1, "Category is required.").default("Bars"),
   isFeatured: z.boolean().default(false),
   isPublished: z.boolean().default(true),
