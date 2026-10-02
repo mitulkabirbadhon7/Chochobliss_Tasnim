@@ -6,6 +6,13 @@
     "frontend",
     "backend"
   ],
+  "allowScripts": {
+    "@firebase/util": true,
+    "@prisma/engines": true,
+    "esbuild": true,
+    "prisma": true,
+    "protobufjs": true
+  },
   "scripts": {
     "dev": "next dev",
     "dev:all": "tsx scripts/dev-all.ts",

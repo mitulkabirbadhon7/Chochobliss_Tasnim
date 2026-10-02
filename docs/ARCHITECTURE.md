@@ -20,7 +20,7 @@ Chocobliss by Tasnim is an artisanal chocolate e-commerce platform built with Ne
                                │ HTTPS / Server Actions
 ┌──────────────────────────────▼──────────────────────────────┐
 │             Next.js 14+ Server Application Layer             │
-│   • Middleware (RBAC, Session Authentication, Route Guard)  │
+│   • Proxy / Route Guards (RBAC, Session Auth, Security Headers) │
 │   • Server Actions & Route Handlers (with Zod validation)   │
 │   • Rate Limiting (Token Bucket: 10 capacity, 2s refill)   │
 │   • Caching Layer (revalidatePath, revalidateTag)           │
