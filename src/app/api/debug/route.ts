@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { SessionService } from "@/lib/auth/session";
 
 export async function GET() {
   const envCheck = {
@@ -9,6 +10,20 @@ export async function GET() {
     hasFirebaseKey: Boolean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY),
     hasFirebaseProjectId: Boolean(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID),
   };
+
+  let sessionResult: any = null;
+  let sessionError: any = null;
+
+  try {
+    const user = await SessionService.getCurrentUser();
+    sessionResult = { user };
+  } catch (err: any) {
+    sessionError = {
+      name: err?.name,
+      message: err?.message,
+      stack: err?.stack,
+    };
+  }
 
   let dbResult: any = null;
   let dbError: any = null;
@@ -27,6 +42,8 @@ export async function GET() {
   return NextResponse.json({
     status: "ok",
     envCheck,
+    sessionResult,
+    sessionError,
     dbResult,
     dbError,
   });
