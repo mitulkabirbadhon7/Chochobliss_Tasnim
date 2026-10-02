@@ -61,19 +61,29 @@ export function HeroCanvas({
     ctx.save();
     ctx.scale(dpr, dpr);
 
-    // Edge-to-edge cover fit: fills full screen with no side borders
+    // Adaptive scaling: On portrait mobile screens, apply a cinematic subtle zoom
+    // (1.26x of width fit) to fill generous vertical space while keeping both chocolate
+    // bars and the full bubble confection safely and beautifully inside the screen.
+    const isPortrait = width < height;
     const imgWidth = img.naturalWidth;
     const imgHeight = img.naturalHeight;
-    const scale = Math.max(width / imgWidth, height / imgHeight);
+
+    const scale = isPortrait
+      ? Math.min((width / imgWidth) * 1.26, height / imgHeight)
+      : Math.max(width / imgWidth, height / imgHeight);
+
     const drawWidth = imgWidth * scale;
     const drawHeight = imgHeight * scale;
     const offsetX = (width - drawWidth) / 2;
     const offsetY = (height - drawHeight) / 2;
 
-    ctx.clearRect(0, 0, width, height);
+    // Fill background with rich dark cacao tone to seamlessly blend letterbox margins
+    ctx.fillStyle = "#1C140D";
+    ctx.fillRect(0, 0, width, height);
+
     ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
 
-    // Subtle luxury dark vignette overlay for depth
+    // Subtle luxury dark vignette overlay for depth and seamless edge blending
     const gradient = ctx.createRadialGradient(
       width / 2,
       height / 2,
@@ -82,7 +92,7 @@ export function HeroCanvas({
       height / 2,
       Math.max(width, height) * 0.85
     );
-    gradient.addColorStop(0, "rgba(28, 20, 13, 0.1)");
+    gradient.addColorStop(0, "rgba(28, 20, 13, 0.05)");
     gradient.addColorStop(1, "rgba(28, 20, 13, 0.65)");
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
@@ -252,7 +262,7 @@ export function HeroCanvas({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full ${isReducedMotion ? "h-screen" : "h-[160vh] sm:h-[240vh]"} bg-[#1C140D] touch-pan-y`}
+      className={`relative w-full ${isReducedMotion ? "h-screen" : "h-[210vh] sm:h-[240vh]"} bg-[#1C140D] touch-pan-y`}
       aria-label="Artisanal chocolate crafting visual journey"
     >
       {/* Sticky Canvas Container: full viewport edge-to-edge */}
@@ -260,7 +270,7 @@ export function HeroCanvas({
         {/* Canvas Element */}
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 w-full h-full block object-cover"
+          className="absolute inset-0 w-full h-full block"
           aria-hidden="true"
         />
 
