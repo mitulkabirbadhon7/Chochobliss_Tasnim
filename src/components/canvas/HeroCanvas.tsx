@@ -61,15 +61,20 @@ export function HeroCanvas({
     ctx.save();
     ctx.scale(dpr, dpr);
 
-    // Adaptive scaling: On portrait mobile screens, fit the entire animation
-    // perfectly within the screen width and height so 100% of the confection
-    // and sequence is fully visible with zero cropping.
+    // Scaling strategy:
+    // On portrait mobile/tablet: The chocolate subject (both wrapped bars and unwrapped bar)
+    // spans roughly 70% of the image width (width ~880px out of 1280px).
+    // We scale so the subject fills ~92% of the mobile screen width, keeping both wrapped
+    // bars and the unwrapped bubble chocolate bar 100% visible in frame with zero harsh
+    // cropping and zero harsh letterboxing!
+    // On landscape/desktop: Scale to cover the full viewport edge-to-edge.
     const isPortrait = width < height;
     const imgWidth = img.naturalWidth;
     const imgHeight = img.naturalHeight;
 
+    const portraitScale = (width * 0.92) / (imgWidth * 0.70);
     const scale = isPortrait
-      ? Math.min(width / imgWidth, height / imgHeight)
+      ? Math.min(portraitScale, height / (imgHeight * 0.82))
       : Math.max(width / imgWidth, height / imgHeight);
 
     const drawWidth = imgWidth * scale;
@@ -83,24 +88,10 @@ export function HeroCanvas({
 
     ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
 
-    // Subtle luxury dark vignette overlay for depth and seamless edge blending
-    const gradient = ctx.createRadialGradient(
-      width / 2,
-      height / 2,
-      Math.min(width, height) * 0.35,
-      width / 2,
-      height / 2,
-      Math.max(width, height) * 0.85
-    );
-    gradient.addColorStop(0, "rgba(28, 20, 13, 0.05)");
-    gradient.addColorStop(1, "rgba(28, 20, 13, 0.65)");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-
     ctx.restore();
   }, []);
 
-  // 1. Initial Setup: Check reduced motion & preload initial frame
+  // 1. Initial Setup: Check reduced motion & preload primary landmark frames
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     setIsReducedMotion(mediaQuery.matches);
@@ -111,33 +102,46 @@ export function HeroCanvas({
 
     mediaQuery.addEventListener("change", handleMotionChange);
 
-    // Always load frame 1 immediately
-    const firstImg = new Image();
-    firstImg.decoding = "async";
-    firstImg.src = getFramePath(1);
-    firstImg.onload = () => {
-      imagesRef.current.set(1, firstImg);
-      drawFrame(1);
-      setIsLoading(false);
-    };
+    // Preload primary visual milestones immediately so both the wrapped bar AND the
+    // unwrapped chocolate bar are available in memory from the very first moment.
+    // Frame 1: initial wrapped bars
+    // Frame 60: mid-sequence
+    // Frame 85: unwrapping reveal
+    // Frame 100: unwrapped bubble chocolate bar
+    // Frame 120: final chocolate bar
+    const landmarkFrames = [1, 60, 85, 100, 120];
+    landmarkFrames.forEach((frameIdx) => {
+      const img = new Image();
+      img.decoding = "async";
+      img.src = getFramePath(frameIdx);
+      img.onload = () => {
+        imagesRef.current.set(frameIdx, img);
+        if (frameIdx === 1) {
+          drawFrame(1);
+          setIsLoading(false);
+        }
+      };
+    });
 
     return () => {
       mediaQuery.removeEventListener("change", handleMotionChange);
     };
   }, [drawFrame, getFramePath]);
 
-  // 2. Preload frame sequence with mobile optimization
+  // 2. Preload full frame sequence with progressive loading
   useEffect(() => {
     if (isReducedMotion) return;
 
     let isMounted = true;
     const isMobile = window.innerWidth < 640;
-    // On mobile: load every 2nd frame to halve network payload and GPU memory
+    // On mobile: load every 2nd frame to halve network payload while keeping 60fps smoothness
     const step = isMobile ? 2 : 1;
 
     const frameIndices: number[] = [];
     for (let i = 1; i <= totalFrames; i += step) {
-      frameIndices.push(i);
+      if (!frameIndices.includes(i)) {
+        frameIndices.push(i);
+      }
     }
     // Ensure final frame is included
     if (!frameIndices.includes(totalFrames)) {
@@ -150,6 +154,7 @@ export function HeroCanvas({
     frameIndices.forEach((frameIdx) => {
       if (imagesRef.current.has(frameIdx)) {
         loadedCount++;
+        setLoadProgress(Math.round((loadedCount / totalToLoad) * 100));
         return;
       }
 
@@ -256,13 +261,13 @@ export function HeroCanvas({
   // Dynamic Opacities:
   // Title at the start fades smoothly as user scrolls
   const titleOpacity = Math.max(0, Math.min(1, 1 - scrollProgress * 2.4));
-  // Shop Now button appears earlier on mobile so the user always has a responsive interactive CTA
-  const shopNowOpacity = Math.max(0, Math.min(1, (scrollProgress - 0.45) * 3.2));
+  // Shop Now button appears when the chocolate is revealed (progress > 55%)
+  const shopNowOpacity = Math.max(0, Math.min(1, (scrollProgress - 0.55) * 2.8));
 
   return (
     <div
       ref={containerRef}
-      className={`relative w-full ${isReducedMotion ? "h-screen h-[100dvh]" : "h-[200vh] sm:h-[240vh]"} bg-[#1C140D] touch-pan-y`}
+      className={`relative w-full ${isReducedMotion ? "h-screen h-[100dvh]" : "h-[240vh] sm:h-[260vh]"} bg-[#1C140D] touch-pan-y`}
       aria-label="Artisanal chocolate crafting visual journey"
     >
       {/* Sticky Canvas Container: full dynamic viewport edge-to-edge */}
@@ -326,7 +331,7 @@ export function HeroCanvas({
         {/* 2. END OF ANIMATION OVERLAY: "Shop Now" button */}
         <div
           className={`absolute inset-0 flex flex-col items-center justify-center text-center px-6 transition-opacity duration-500 z-20 ${
-            scrollProgress > 0.45 ? "pointer-events-auto" : "pointer-events-none"
+            scrollProgress > 0.55 ? "pointer-events-auto" : "pointer-events-none"
           }`}
           style={{
             opacity: isReducedMotion ? 1 : shopNowOpacity,
