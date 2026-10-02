@@ -10,5 +10,17 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "",
 };
 
-export const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
-export const auth: Auth = getAuth(app);
+let _app: FirebaseApp | null = null;
+let _auth: Auth | null = null;
+
+if (firebaseConfig.apiKey) {
+  try {
+    _app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    _auth = getAuth(_app);
+  } catch (err) {
+    console.warn("Firebase Client initialization skipped:", err);
+  }
+}
+
+export const app = _app;
+export const auth = _auth;
