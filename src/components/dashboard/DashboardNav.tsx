@@ -37,7 +37,7 @@ export function DashboardNav({ pointsCount }: DashboardNavProps) {
         const Icon = link.icon;
         const isActive = link.exact
           ? pathname === link.href
-          : pathname.startsWith(link.href);
+          : Boolean(pathname?.startsWith(link.href));
 
         return (
           <Link

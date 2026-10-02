@@ -72,7 +72,7 @@ export function Navbar() {
     { label: "Contact Us", href: "/contact" },
   ];
 
-  if (pathname.startsWith("/admin")) {
+  if (pathname?.startsWith("/admin")) {
     return null;
   }
 

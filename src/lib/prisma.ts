@@ -22,10 +22,15 @@ const isProduction = process.env.NODE_ENV === "production";
 const pool =
   globalForPrisma.pool ??
   new Pool({
-    connectionString,
+    connectionString: connectionString || undefined,
     ssl: isNeon || isProduction ? { rejectUnauthorized: false } : undefined,
     max: 10,
   });
+
+// Essential: Prevent unhandled error events from crashing Node.js serverless functions on idle drops
+pool.on("error", (err) => {
+  console.warn("Neon PostgreSQL pool idle error:", err.message);
+});
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.pool = pool;
 
