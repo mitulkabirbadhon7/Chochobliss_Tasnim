@@ -61,15 +61,15 @@ export function HeroCanvas({
     ctx.save();
     ctx.scale(dpr, dpr);
 
-    // Adaptive scaling: On portrait mobile screens, apply a cinematic subtle zoom
-    // (1.26x of width fit) to fill generous vertical space while keeping both chocolate
-    // bars and the full bubble confection safely and beautifully inside the screen.
+    // Adaptive scaling: On portrait mobile screens, fit the entire animation
+    // perfectly within the screen width and height so 100% of the confection
+    // and sequence is fully visible with zero cropping.
     const isPortrait = width < height;
     const imgWidth = img.naturalWidth;
     const imgHeight = img.naturalHeight;
 
     const scale = isPortrait
-      ? Math.min((width / imgWidth) * 1.26, height / imgHeight)
+      ? Math.min(width / imgWidth, height / imgHeight)
       : Math.max(width / imgWidth, height / imgHeight);
 
     const drawWidth = imgWidth * scale;
@@ -262,11 +262,11 @@ export function HeroCanvas({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full ${isReducedMotion ? "h-screen" : "h-[210vh] sm:h-[240vh]"} bg-[#1C140D] touch-pan-y`}
+      className={`relative w-full ${isReducedMotion ? "h-screen h-[100dvh]" : "h-[200vh] sm:h-[240vh]"} bg-[#1C140D] touch-pan-y`}
       aria-label="Artisanal chocolate crafting visual journey"
     >
-      {/* Sticky Canvas Container: full viewport edge-to-edge */}
-      <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
+      {/* Sticky Canvas Container: full dynamic viewport edge-to-edge */}
+      <div className="sticky top-0 h-screen h-[100dvh] w-full overflow-hidden flex items-center justify-center">
         {/* Canvas Element */}
         <canvas
           ref={canvasRef}
@@ -332,7 +332,7 @@ export function HeroCanvas({
             opacity: isReducedMotion ? 1 : shopNowOpacity,
           }}
         >
-          <div className="transform translate-y-12 sm:translate-y-36">
+          <div className="transform translate-y-8 sm:translate-y-32">
             <Link
               href="/shop"
               className="inline-flex items-center justify-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 bg-[#C45A3C] hover:bg-[#a8492e] text-[#FAF7F2] rounded-full text-sm sm:text-lg font-semibold tracking-wide transition-all shadow-2xl hover:shadow-[#C45A3C]/40 hover:scale-105 active:scale-95 duration-200"

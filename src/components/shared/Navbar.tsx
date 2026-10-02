@@ -212,10 +212,11 @@ export function Navbar() {
             ) : (
               <Link
                 href="/login"
-                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#1C140D] hover:text-[#C45A3C] px-3 py-1.5 transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#1C140D] hover:text-[#C45A3C] p-2 sm:px-3 sm:py-1.5 rounded-full hover:bg-[#F5EDE4] transition-colors"
+                aria-label="Sign In to your account"
               >
                 <UserIcon className="w-4 h-4" />
-                <span>Sign In</span>
+                <span className="hidden sm:inline">Sign In</span>
               </Link>
             )}
 

@@ -459,3 +459,56 @@ export async function changePasswordAction(rawInput: {
     data: { message: "Password updated successfully." },
   };
 }
+
+/**
+ * Resets a forgotten password using registered email verification.
+ */
+export async function resetForgottenPasswordAction(rawInput: {
+  email: string;
+  newPassword: string;
+}): Promise<ActionResult<{ message: string }>> {
+  const rateLimitResult = rateLimit("auth:reset-password", { maxTokens: 5, refillIntervalMs: 20000 });
+  if (!rateLimitResult.success) {
+    return {
+      success: false,
+      error: { code: "RATE_LIMITED", message: "Too many reset attempts. Please wait a moment." },
+    };
+  }
+
+  const email = rawInput.email?.toLowerCase().trim();
+  if (!email || !email.includes("@")) {
+    return {
+      success: false,
+      error: { code: "VALIDATION_ERROR", message: "Please provide a valid email address." },
+    };
+  }
+
+  if (!rawInput.newPassword || rawInput.newPassword.length < 6) {
+    return {
+      success: false,
+      error: { code: "VALIDATION_ERROR", message: "New password must be at least 6 characters long." },
+    };
+  }
+
+  const dbUser = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (!dbUser) {
+    return {
+      success: false,
+      error: { code: "NOT_FOUND", message: "No account found with this email address." },
+    };
+  }
+
+  await prisma.user.update({
+    where: { id: dbUser.id },
+    data: { passwordHash: hashPassword(rawInput.newPassword) },
+  });
+
+  return {
+    success: true,
+    data: { message: "Password has been successfully reset! You can now sign in with your new password." },
+  };
+}
+

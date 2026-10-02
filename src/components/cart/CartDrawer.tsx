@@ -61,8 +61,8 @@ export function CartDrawer() {
         aria-hidden="true"
       />
 
-      <div className="fixed inset-y-0 right-0 flex max-w-full pl-10">
-        <div className="w-screen max-w-md bg-[#FAF7F2] text-[#1C140D] shadow-2xl flex flex-col border-l border-[#E8DCCF]">
+      <div className="fixed inset-y-0 right-0 flex max-w-full pl-0 sm:pl-10">
+        <div className="w-screen max-w-full sm:max-w-md bg-[#FAF7F2] text-[#1C140D] shadow-2xl flex flex-col border-l border-[#E8DCCF]">
           {/* Header */}
           <div className="p-6 border-b border-[#E8DCCF] flex items-center justify-between bg-[#F5EDE4]">
             <div className="flex items-center gap-3">
